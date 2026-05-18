@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CommandLine.Generators": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\..\\tests\\Playground\\Playground.csproj"
+    }
+  }
+}

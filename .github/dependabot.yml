@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+    commit-message:
+      prefix: "[DPBOT] "
+    target-branch: "main"
+    open-pull-requests-limit: 1
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[DPDBT] "
+    target-branch: "main"
+    open-pull-requests-limit: 1
+    groups:
+      nuget-packages:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[DPDBT] "
+    target-branch: "main"
+    open-pull-requests-limit: 1

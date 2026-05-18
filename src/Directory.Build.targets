@@ -1,0 +1,42 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- Set this to False if git executable is not available or building outside of git repository. 
+         'Version' parameter or environment variable should take precedence over git, 1.0.0 is the default value that MSBuild sets -->
+    <UpdateVersionFromGit Condition="'$(UpdateVersionFromGit)' == '' And '$(Version)' == '1.0.0'">True</UpdateVersionFromGit>
+  </PropertyGroup>
+
+  <!-- Sets version info based on the latest git tag name and revision number in <major>.<minor>.<revision> format
+       which is expected to be used with AssemblyVersion and AssemblyFileVersion. AssemblyInformationalVersion will be automatically
+       populated by MSBuild and postfixed with SourceRevisionId property which has current git commit has, see
+       https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/8.0/source-link -->
+  <Target Name="GenerateGitVersion"
+          Condition="'$(UpdateVersionFromGit)' == 'True'"
+          AfterTargets="InitializeSourceControlInformationFromSourceControlManager">
+    <Exec Command="git describe --tags --long --always --abbrev=1"
+          ConsoleToMSBuild="true"
+          ContinueOnError="true"
+          Condition="'$(SourceRevisionId)' != ''"
+          IgnoreExitCode="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitVersion" />
+    </Exec>
+
+    <Warning Condition="'$(SourceRevisionId)' == ''" Text="Cannot set assembly version information, source control not available" />
+
+    <!-- Version-related properties are set in GetAssemblyVersion target that respects $(Version), however,
+         it is executed before InitializeSourceControlInformation so we cannot be sure that git is available.
+         Thus instead of setting $(Version) we should set all three version-related properties to override values
+         produced by GetAssemblyVersion. -->
+    <PropertyGroup Condition="'$(SourceRevisionId)' != ''">
+      <GitVersionHashIndex>$(GitVersion.LastIndexOf('-'))</GitVersionHashIndex>
+      <GitVersionNormalized>$(GitVersion.Replace('-', '.'))</GitVersionNormalized>
+      <Version Condition="'$(GitVersionHashIndex)' != '-1'">$([System.String]::Copy('$(GitVersionNormalized)').Substring(0, $(GitVersionHashIndex)))</Version>
+      <AssemblyVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version).0</AssemblyVersion>
+      <FileVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version).0</FileVersion>
+      <InformationalVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+
+</Project>

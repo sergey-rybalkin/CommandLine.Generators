@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Tests/">
+    <Project Path="tests/CommandLine.Generators.Tests/CommandLine.Generators.Tests.csproj" Id="287e7277-1250-40b2-8366-8dd92cb20ce8" />
+    <Project Path="tests/Playground/Playground.csproj" Id="25240735-c16d-4a07-b2b9-b98452e470c7" />
+  </Folder>
+  <Project Path="src/CommandLine.Generators/CommandLine.Generators.csproj" />
+</Solution>

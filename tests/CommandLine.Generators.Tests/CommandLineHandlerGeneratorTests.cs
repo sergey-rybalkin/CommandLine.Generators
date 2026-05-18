@@ -1,0 +1,306 @@
+using CommandLine.Generators.Tests.Infrastructure;
+using Microsoft.CodeAnalysis;
+using GeneratorRunResult = CommandLine.Generators.Tests.Infrastructure.GeneratorRunResult;
+
+namespace CommandLine.Generators.Tests;
+
+/// <summary>
+/// End-to-end tests for <see cref="CommandLineHandlerGenerator"/>.
+/// </summary>
+public sealed class CommandLineHandlerGeneratorTests
+{
+    [Test]
+    public async Task Emits_attributes_file_in_post_initialization()
+    {
+        GeneratorRunResult result = GeneratorTestHost.Run(string.Empty);
+
+        result.GeneratedSources.ShouldContainKey("CommandLine.Attributes.g.cs");
+        result.GeneratedSources["CommandLine.Attributes.g.cs"].ShouldContain("class CommandAttribute");
+        result.GeneratedSources["CommandLine.Attributes.g.cs"].ShouldContain("class OptionAttribute");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Generates_handler_partial_with_get_command_definition_and_from_parse_result()
+    {
+        const string source = """
+            using System.IO;
+            using CommandLine.Generators;
+
+            namespace SampleApp.Commands;
+
+            [Command("serve", "Starts the web server")]
+            public partial class ServeCommand
+            {
+                public ServeCommand(
+                    [Option("Port to listen on", "port", 'p')] int port,
+                    [Option("Root directory", "path", 'r')] DirectoryInfo root)
+                {
+                }
+
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratedSources.ShouldContainKey("ServeCommand_handler.g.cs");
+        string generated = result.GeneratedSources["ServeCommand_handler.g.cs"];
+        generated.ShouldContain("public static Command GetCommandDefinition()");
+        generated.ShouldContain("public static ServeCommand FromParseResult(ParseResult pr)");
+        generated.ShouldContain("partial void OnCommandDefined(Command cmd);");
+        generated.ShouldContain("partial void OnCommandCreated(ServeCommand handler, ParseResult pr);");
+
+        EnsureNoErrors(result);
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Wires_sync_execute_via_set_action_when_execute_method_present()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("run", "")]
+            public partial class RunCommand
+            {
+                public RunCommand() { }
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GeneratedSources["RunCommand_handler.g.cs"];
+        generated.ShouldContain("retVal.SetAction(parseResult => FromParseResult(parseResult).Execute());");
+
+        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Wires_async_execute_when_execute_async_method_present()
+    {
+        const string source = """
+            using System.Threading;
+            using System.Threading.Tasks;
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("run", "")]
+            public partial class AsyncCommand
+            {
+                public AsyncCommand() { }
+                public Task<int> ExecuteAsync(CancellationToken ct) => Task.FromResult(0);
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GeneratedSources["AsyncCommand_handler.g.cs"];
+        generated.ShouldContain(
+            "retVal.SetAction(static (parseResult, ct) => FromParseResult(parseResult).ExecuteAsync(ct));");
+
+        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Reports_cmdgen001_when_no_execute_method_defined_but_still_emits_partial()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("noop", "")]
+            public partial class NoopCommand
+            {
+                public NoopCommand() { }
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratorDiagnostics.ShouldContain(d => d.Id == "CMDGEN001");
+        result.GeneratedSources.ShouldContainKey("NoopCommand_handler.g.cs");
+        result.GeneratedSources["NoopCommand_handler.g.cs"].ShouldNotContain("SetAction");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Marks_nullable_parameters_as_not_required()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("c", "")]
+            public partial class NullableCommand
+            {
+                public NullableCommand(
+                    [Option("p")] int? port,
+                    [Option("n")] string? name)
+                {
+                }
+
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GeneratedSources["NullableCommand_handler.g.cs"];
+        generated.ShouldContain("Option<int?> port");
+        generated.ShouldContain("Option<string?> name");
+        generated.ShouldNotContain("Required = true");
+        generated.ShouldNotContain("DefaultValueFactory");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Emits_default_value_factory_for_parameters_with_default_value()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("c", "")]
+            public partial class DefaultedCommand
+            {
+                public DefaultedCommand(
+                    [Option("port")] int port = 8080)
+                {
+                }
+
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GeneratedSources["DefaultedCommand_handler.g.cs"];
+        generated.ShouldContain("DefaultValueFactory = static _ => 8080");
+        generated.ShouldContain("Required = false");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Emits_alias_and_help_name_when_option_attribute_specifies_them()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("c", "")]
+            public partial class AliasCommand
+            {
+                public AliasCommand([Option("Port", "port", 'p')] int port) { }
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GeneratedSources["AliasCommand_handler.g.cs"];
+        generated.ShouldContain("HelpName = @\"port\"");
+        generated.ShouldContain("port.Aliases.Add(\"-p\");");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Ignores_nested_classes_and_global_namespace_classes()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            [Command("global", "")]
+            public partial class GlobalCommand
+            {
+                public GlobalCommand() { }
+                public int Execute() => 0;
+            }
+
+            namespace Sample;
+
+            public partial class Outer
+            {
+                [Command("nested", "")]
+                public partial class NestedCommand
+                {
+                    public NestedCommand() { }
+                    public int Execute() => 0;
+                }
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratedSources.ShouldNotContainKey("GlobalCommand_handler.g.cs");
+        result.GeneratedSources.ShouldNotContainKey("NestedCommand_handler.g.cs");
+        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
+
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Generates_root_command_extensions_aggregator_with_all_handlers()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace A
+            {
+                [Command("x", "")]
+                public partial class X
+                {
+                    public X() { }
+                    public int Execute() => 0;
+                }
+            }
+
+            namespace B
+            {
+                [Command("y", "")]
+                public partial class Y
+                {
+                    public Y() { }
+                    public int Execute() => 0;
+                }
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratedSources.ShouldContainKey("RootCommandExtensions.g.cs");
+        string aggregator = result.GeneratedSources["RootCommandExtensions.g.cs"];
+        aggregator.ShouldContain("namespace CommandLine.Generators;");
+        aggregator.ShouldContain("internal static class RootCommandExtensions");
+        aggregator.ShouldContain("internal static void AddCommandsFromAssembly(this RootCommand root)");
+        aggregator.ShouldContain("root.Add(global::A.X.GetCommandDefinition());");
+        aggregator.ShouldContain("root.Add(global::B.Y.GetCommandDefinition());");
+
+        await Task.CompletedTask;
+    }
+
+    private static void EnsureNoErrors(GeneratorRunResult result)
+    {
+        IEnumerable<Diagnostic> errors = result.CompilationDiagnostics
+            .Where(d => d.Severity == DiagnosticSeverity.Error);
+        errors.ShouldBeEmpty();
+    }
+}

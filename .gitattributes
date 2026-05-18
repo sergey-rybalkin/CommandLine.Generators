@@ -1,0 +1,26 @@
+# .NET specific binary files
+*.DM1 filter=lfs diff=lfs merge=lfs -text
+*.nupkg filter=lfs diff=lfs merge=lfs -text
+
+# T4 scripts for Visual Studio
+*.tt        text eol=crlf
+*.ttinclude text eol=crlf
+
+*.cs      diff=csharp
+
+*.sln     merge=union text eol=crlf
+*.csproj  merge=union text eol=crlf
+*.vbproj  merge=union text eol=crlf
+*.fsproj  merge=union text eol=crlf
+*.sqlproj merge=union text eol=crlf
+
+# Images
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.ico filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.webp filter=lfs diff=lfs merge=lfs -text
+
+# Fonts
+*.woff2 filter=lfs diff=lfs merge=lfs -text

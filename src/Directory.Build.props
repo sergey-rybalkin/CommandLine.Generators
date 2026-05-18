@@ -1,0 +1,47 @@
+<Project>
+
+  <PropertyGroup>
+    <Authors>Sergey Rybalkin</Authors>
+    <Copyright>Copyright � Sergey Rybalkin</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>command line attribute generator generation codegen codegenerator codegeneration</PackageTags>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <Version Condition="'$(GitVersion)' != ''">$(GitVersion)</Version>
+
+    <!-- Each assembly has its own title that is specified in AssemblyInfo.cs -->
+    <GenerateAssemblyTitleAttribute>False</GenerateAssemblyTitleAttribute>
+  </PropertyGroup>
+
+  <!-- Common project settings -->
+  <PropertyGroup>
+    <!-- See https://github.com/dotnet/project-system/blob/main/docs/build-acceleration.md -->
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AnalysisLevel>latest-Recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Avoid copying non-english resource assemblies while publishing -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)\..\build\stylecop.json" Link="stylecop.json" />
+    <CodeAnalysisDictionary Include="$(MSBuildThisFileDirectory)\..\build\CodeAnalysisDictionary.xml" Link="CodeAnalysisDictionary.xml" />
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BuildDate</_Parameter1>
+      <_Parameter2>$([System.DateTime]::UtcNow.ToString("s"))</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- Include personal MSBuild settings that are ignored by source control -->
+  <Import Condition="Exists('$(MSBuildThisFileDirectory)\Directory.Personal.props')" Project="$(MSBuildThisFileDirectory)\Directory.Personal.props" />
+    
+</Project>
