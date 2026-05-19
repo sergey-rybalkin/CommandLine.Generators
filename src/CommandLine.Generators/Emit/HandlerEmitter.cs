@@ -1,5 +1,4 @@
 using System.Text;
-using System.Xml.Schema;
 using CommandLine.Generators.Models;
 
 namespace CommandLine.Generators.Emit;

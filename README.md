@@ -1,6 +1,7 @@
-# ![](https://raw.githubusercontent.com/sergey-rybalkin/CommandLine.Generators/refs/heads/main/docs/i/logo.jpg) CommandLine.Generators Roslyn Source Generator
+![Logo](https://media.githubusercontent.com/media/sergey-rybalkin/CommandLine.Generators/refs/heads/main/docs/i/logo.jpg)
+# CommandLine.Generators Roslyn Source Generator
 
-[![CI Build](https://github.com/sergey-rybalkin/CommandLine.Generators/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/sergey-rybalkin/CommandLine.Generators/actions/workflows/ci.yml)
+[![CI Build](https://github.com/sergey-rybalkin/CommandLine.Generators/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sergey-rybalkin/CommandLine.Generators/actions/workflows/ci.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/CommandLine.Generators)](https://www.nuget.org/packages/CommandLine.Generators)
 
 CommandLine.Generators is a Roslyn incremental source generator for `System.CommandLine` package. It enables declarative command handler definitions by scanning classes marked with attributes and generating registration code scaffolding.
