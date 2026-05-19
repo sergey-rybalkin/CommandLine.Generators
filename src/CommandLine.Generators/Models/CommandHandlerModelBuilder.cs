@@ -22,6 +22,7 @@ internal static class CommandHandlerModelBuilder
             return default;
         }
 
+        // Look for Execute method that can be set as an action handler for the command.
         bool hasSyncExecute = containingType.GetMembers(Constants.ExecuteMethodName)
             .OfType<IMethodSymbol>()
             .Any(m =>
@@ -55,6 +56,7 @@ internal static class CommandHandlerModelBuilder
 
     private static bool IsAsyncExecuteSignature(IMethodSymbol method)
     {
+        // Should be async Task<int> ExecuteAsync(CancellationToken ct)
         if (method.IsStatic || method.Parameters.Length is not 1)
             return false;
 

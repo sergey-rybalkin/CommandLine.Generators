@@ -22,7 +22,7 @@ public sealed class CommandLineHandlerGeneratorTests
     }
 
     [Test]
-    public async Task Generates_handler_partial_with_get_command_definition_and_from_parse_result()
+    public async Task Generates_handler_partial_with_expected_methods()
     {
         const string source = """
             using System.IO;
@@ -47,10 +47,12 @@ public sealed class CommandLineHandlerGeneratorTests
 
         result.GeneratedSources.ShouldContainKey("ServeCommand_handler.g.cs");
         string generated = result.GeneratedSources["ServeCommand_handler.g.cs"];
-        generated.ShouldContain("public static Command GetCommandDefinition()");
-        generated.ShouldContain("public static ServeCommand FromParseResult(ParseResult pr)");
-        generated.ShouldContain("partial void OnCommandDefined(Command cmd);");
-        generated.ShouldContain("partial void OnCommandCreated(ServeCommand handler, ParseResult pr);");
+        generated.ShouldContain($"public static Command {Constants.GetCommandDefinitionMethodName}()");
+        generated.ShouldContain(
+            $"public static ServeCommand {Constants.FromParseResultMethodName}(ParseResult pr)");
+        generated.ShouldContain($"partial void {Constants.OnCommandDefinedMethodName}(Command cmd);");
+        generated.ShouldContain(
+            $"partial void {Constants.OnCommandCreatedMethodName}(ServeCommand handler, ParseResult pr);");
 
         EnsureNoErrors(result);
 
@@ -60,7 +62,7 @@ public sealed class CommandLineHandlerGeneratorTests
     [Test]
     public async Task Wires_sync_execute_via_set_action_when_execute_method_present()
     {
-        const string source = """
+        const string source = $$"""
             using CommandLine.Generators;
 
             namespace Sample;
@@ -69,14 +71,14 @@ public sealed class CommandLineHandlerGeneratorTests
             public partial class RunCommand
             {
                 public RunCommand() { }
-                public int Execute() => 0;
+                public int {{Constants.ExecuteMethodName}}() => 0;
             }
             """;
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         string generated = result.GeneratedSources["RunCommand_handler.g.cs"];
-        generated.ShouldContain("retVal.SetAction(parseResult => FromParseResult(parseResult).Execute());");
+        generated.ShouldContain($"{Constants.ExecuteMethodName}()");
 
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
 
@@ -86,26 +88,26 @@ public sealed class CommandLineHandlerGeneratorTests
     [Test]
     public async Task Wires_async_execute_when_execute_async_method_present()
     {
-        const string source = """
-            using System.Threading;
-            using System.Threading.Tasks;
-            using CommandLine.Generators;
+        const string source =
+$$"""
+using System.Threading;
+using System.Threading.Tasks;
+using CommandLine.Generators;
 
-            namespace Sample;
+namespace Sample;
 
-            [Command("run", "")]
-            public partial class AsyncCommand
-            {
-                public AsyncCommand() { }
-                public Task<int> ExecuteAsync(CancellationToken ct) => Task.FromResult(0);
-            }
-            """;
+[Command("run", "")]
+public partial class AsyncCommand
+{
+    public AsyncCommand() { }
+    public Task<int> {{Constants.ExecuteAsyncMethodName}}(CancellationToken ct) => Task.FromResult(0);
+}
+""";
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         string generated = result.GeneratedSources["AsyncCommand_handler.g.cs"];
-        generated.ShouldContain(
-            "retVal.SetAction(static (parseResult, ct) => FromParseResult(parseResult).ExecuteAsync(ct));");
+        generated.ShouldContain($"{Constants.ExecuteAsyncMethodName}(ct)");
 
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
 
@@ -113,7 +115,7 @@ public sealed class CommandLineHandlerGeneratorTests
     }
 
     [Test]
-    public async Task Reports_cmdgen001_when_no_execute_method_defined_but_still_emits_partial()
+    public async Task Reports_diagnostics_when_no_execute_method_defined_but_still_emits_partial()
     {
         const string source = """
             using CommandLine.Generators;
@@ -129,7 +131,7 @@ public sealed class CommandLineHandlerGeneratorTests
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        result.GeneratorDiagnostics.ShouldContain(d => d.Id == "CMDGEN001");
+        result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         result.GeneratedSources.ShouldContainKey("NoopCommand_handler.g.cs");
         result.GeneratedSources["NoopCommand_handler.g.cs"].ShouldNotContain("SetAction");
 
@@ -252,7 +254,7 @@ public sealed class CommandLineHandlerGeneratorTests
 
         result.GeneratedSources.ShouldNotContainKey("GlobalCommand_handler.g.cs");
         result.GeneratedSources.ShouldNotContainKey("NestedCommand_handler.g.cs");
-        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
+        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
 
         await Task.CompletedTask;
     }
@@ -291,8 +293,8 @@ public sealed class CommandLineHandlerGeneratorTests
         aggregator.ShouldContain("namespace CommandLine.Generators;");
         aggregator.ShouldContain("internal static class RootCommandExtensions");
         aggregator.ShouldContain("internal static void AddCommandsFromAssembly(this RootCommand root)");
-        aggregator.ShouldContain("root.Add(global::A.X.GetCommandDefinition());");
-        aggregator.ShouldContain("root.Add(global::B.Y.GetCommandDefinition());");
+        aggregator.ShouldContain($"root.Add(global::A.X.{Constants.GetCommandDefinitionMethodName}());");
+        aggregator.ShouldContain($"root.Add(global::B.Y.{Constants.GetCommandDefinitionMethodName}());");
 
         await Task.CompletedTask;
     }
