@@ -8,13 +8,15 @@ internal static class Diagnostics
     /// Roslyn diagnostics that should be reported on command handlers that do not define execute method.
     /// </summary>
     public static readonly DiagnosticDescriptor MissingExecuteMethod = new(
-        id: "CMDGEN001",
+        id: MissingExecuteMethodId,
         title: "Missing Execute method",
         messageFormat: MissingExecuteMessage,
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: MissingExecuteDescription);
+
+    internal const string MissingExecuteMethodId = "CMDGEN001";
 
     private const string MissingExecuteMessage =
         "Type '{0}' must declare either 'int Execute()' or 'Task<int> ExecuteAsync(CancellationToken)'";
