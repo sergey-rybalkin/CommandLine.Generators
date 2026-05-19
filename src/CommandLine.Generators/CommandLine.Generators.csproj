@@ -1,19 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <PackageId>CommandLine.Generators</PackageId>
     <AssemblyName>$(PackageId)</AssemblyName>
-    <RootNamespace>CommandLine.Generators</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>true</ImplicitUsings>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <Authors>Sergey Rybalkin</Authors>
+    <Copyright>Copyright (c) 2026 Sergey Rybalkin</Copyright>      
     <Description>A source generator for creating helper extension methods on command line handlers for System.CommandLine package</Description>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <FileVersion>$(Version)</FileVersion>
+    <ImplicitUsings>true</ImplicitUsings>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
     <IsPackable>true</IsPackable>
-    <LangVersion>latest</LangVersion>
     <IsRoslynComponent>true</IsRoslynComponent>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageId>CommandLine.Generators</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/sergey-rybalkin/CommandLine.Generators</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>roslyn,commandline,source-generator</PackageTags>
+    <PackageVersion>$(Version)</PackageVersion>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/sergey-rybalkin/CommandLine.Generators</RepositoryUrl>
+    <RootNamespace>CommandLine.Generators</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,7 +43,15 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="StyleCopPlus" Version="3.4.1" />
+    <PackageReference Include="StyleCopPlus" Version="3.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\i\icon.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
