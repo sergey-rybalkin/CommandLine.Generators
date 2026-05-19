@@ -41,11 +41,23 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Build package version
+        shell: pwsh
+        run: |
+          $tag = '${{ inputs.tag_name }}'
+
+          if (-not $tag.StartsWith($env:TAG_PREFIX)) {
+            throw "Invalid tag format: $tag"
+          }
+
+          $version = $tag.Substring($env:TAG_PREFIX.Length)
+          "PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+
       - name: Build
-        run: msbuild /m /p:Configuration=Release
+        run: msbuild /m /p:Configuration=Release /p:Version=$env:PACKAGE_VERSION
 
       - name: Pack NuGet package
-        run: dotnet pack ./src/CommandLine.Generators/CommandLine.Generators.csproj --configuration Release
+        run: dotnet pack ./src/CommandLine.Generators/CommandLine.Generators.csproj --configuration Release /p:Version=$env:PACKAGE_VERSION
 
       - name: Publish NuGet package
         run: dotnet nuget push **/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s
