@@ -323,6 +323,34 @@ public partial class AsyncCommand
         await Task.CompletedTask;
     }
 
+    [Test]
+    public async Task Reports_when_class_has_multiple_constructors()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("run", "Runs the app")]
+            public partial class MultipleConstructorsCommand
+            {
+                public MultipleConstructorsCommand() { }
+                public MultipleConstructorsCommand([Option("Port")] int port) { }
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratorDiagnostics.ShouldContain(
+            d => d.Id == Diagnostics.MultipleConstructorsCommandHandlerId);
+        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
+        result.GeneratedSources.ShouldNotContainKey("MultipleConstructorsCommand_handler.g.cs");
+        result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
+
+        await Task.CompletedTask;
+    }
+
     private static void EnsureNoErrors(GeneratorRunResult result)
     {
         IEnumerable<Diagnostic> errors = result.CompilationDiagnostics

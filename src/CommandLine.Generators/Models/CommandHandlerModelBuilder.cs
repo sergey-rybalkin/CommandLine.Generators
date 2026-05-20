@@ -43,6 +43,7 @@ internal static class CommandHandlerModelBuilder
         string description = (string?)commandAttr.ConstructorArguments[1].Value ?? "";
         string ns = containingType.ContainingNamespace.ToDisplayString();
 
+        bool hasMultipleConstructors = containingType.InstanceConstructors.Length > 1;
         ImmutableArray<CommandParameterModel> parameters = ExtractParameters(containingType, ct);
 
         ClassDeclarationSyntax classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
@@ -57,7 +58,8 @@ internal static class CommandHandlerModelBuilder
             !hasSyncExecute && hasAsyncExecute,
             parameters,
             location,
-            isPartial);
+            isPartial,
+            hasMultipleConstructors);
     }
 
     private static bool IsAsyncExecuteSignature(IMethodSymbol method)

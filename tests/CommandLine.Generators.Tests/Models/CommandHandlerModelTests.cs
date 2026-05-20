@@ -21,7 +21,8 @@ public class CommandHandlerModelTests
         bool hasAsyncExecute = false,
         ImmutableArray<CommandParameterModel>? parameters = null,
         Location? location = null,
-        bool isPartial = true)
+        bool isPartial = true,
+        bool hasMultipleConstructors = false)
     {
         return new CommandHandlerModel(
             name,
@@ -32,7 +33,8 @@ public class CommandHandlerModelTests
             hasAsyncExecute,
             parameters ?? ImmutableArray<CommandParameterModel>.Empty,
             location ?? Location.None,
-            isPartial);
+            isPartial,
+            hasMultipleConstructors);
     }
 
     [Test]
@@ -90,6 +92,16 @@ public class CommandHandlerModelTests
     {
         CommandHandlerModel a = CreateModel(hasExecute: true);
         CommandHandlerModel b = CreateModel(hasExecute: false);
+
+        a.Equals(b).ShouldBeFalse();
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    public async Task Equals_returns_false_when_has_multiple_constructors_differs()
+    {
+        CommandHandlerModel a = CreateModel(hasMultipleConstructors: true);
+        CommandHandlerModel b = CreateModel(hasMultipleConstructors: false);
 
         a.Equals(b).ShouldBeFalse();
         await Task.CompletedTask;
