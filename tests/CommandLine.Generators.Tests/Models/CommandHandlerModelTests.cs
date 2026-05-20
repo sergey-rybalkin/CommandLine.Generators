@@ -20,7 +20,8 @@ public class CommandHandlerModelTests
         bool hasExecute = true,
         bool hasAsyncExecute = false,
         ImmutableArray<CommandParameterModel>? parameters = null,
-        Location? location = null)
+        Location? location = null,
+        bool isPartial = true)
     {
         return new CommandHandlerModel(
             name,
@@ -30,7 +31,8 @@ public class CommandHandlerModelTests
             hasExecute,
             hasAsyncExecute,
             parameters ?? ImmutableArray<CommandParameterModel>.Empty,
-            location ?? Location.None);
+            location ?? Location.None,
+            isPartial);
     }
 
     [Test]

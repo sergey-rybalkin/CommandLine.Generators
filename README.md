@@ -166,6 +166,7 @@ Only top-level classes declared in a named namespace are processed. Nested types
 | Id | Severity | Description |
 | --- | --- | --- |
 | `CMDGEN001` | Warning | Reported on a `[Command]`-annotated class that declares neither `int Execute()` nor `Task<int> ExecuteAsync(CancellationToken)`. The generator still produces `GetCommandDefinition` and `FromParseResult`, but does not wire `SetAction`. |
+| `CMDGEN002` | Warning | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code. |
 
 Generated file names follow this pattern:
 
