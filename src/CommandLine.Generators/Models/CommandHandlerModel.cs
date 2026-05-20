@@ -19,6 +19,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     /// <param name="hasAsyncExecute">True if target type declares an async execute method.</param>
     /// <param name="parameters">The command parameters extracted from handler method options.</param>
     /// <param name="location">The source location of the command handler class declaration.</param>
+    /// <param name="isPartial">True if the target type is declared as partial, false otherwise.</param>
     public CommandHandlerModel(
         string name,
         string description,
@@ -27,7 +28,8 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
         bool hasExecute,
         bool hasAsyncExecute,
         ImmutableArray<CommandParameterModel> parameters,
-        Location location)
+        Location location,
+        bool isPartial)
     {
         Name = name;
         Description = description;
@@ -37,6 +39,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
         HasAsyncExecute = hasAsyncExecute;
         Parameters = parameters;
         Location = location;
+        IsPartial = isPartial;
     }
 
     /// <summary>
@@ -79,6 +82,11 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     /// </summary>
     public Location Location { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the target type is declared as partial.
+    /// </summary>
+    public bool IsPartial { get; }
+
     /// <inheritdoc/>
     public bool Equals(CommandHandlerModel other)
     {
@@ -88,6 +96,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
             || !string.Equals(NamespaceName, other.NamespaceName, StringComparison.Ordinal)
             || HasExecuteMethod != other.HasExecuteMethod
             || HasAsyncExecute != other.HasAsyncExecute
+            || IsPartial != other.IsPartial
             || Parameters.Length != other.Parameters.Length)
         {
             return false;
@@ -120,6 +129,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
             hash = (hash * 31) + StringComparer.Ordinal.GetHashCode(NamespaceName ?? "");
             hash = (hash * 31) + HasExecuteMethod.GetHashCode();
             hash = (hash * 31) + HasAsyncExecute.GetHashCode();
+            hash = (hash * 31) + IsPartial.GetHashCode();
 
             foreach (CommandParameterModel parameter in Parameters)
                 hash = (hash * 31) + parameter.GetHashCode();

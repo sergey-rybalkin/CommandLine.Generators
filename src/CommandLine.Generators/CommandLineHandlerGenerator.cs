@@ -39,21 +39,14 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
             .Where(static model => !string.IsNullOrEmpty(model.ClassName)
                 && !string.IsNullOrEmpty(model.NamespaceName));
 
-        context.RegisterSourceOutput(pipeline, static (context, model) =>
-        {
-            if (!model.HasExecuteMethod)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Diagnostics.MissingExecuteMethod,
-                    model.Location,
-                    model.ClassName));
-            }
+        IncrementalValuesProvider<CommandHandlerModel> partialPipeline =
+            pipeline.Where(static model => model.IsPartial);
 
-            string source = HandlerEmitter.Emit(model);
-            context.AddSource($"{model.ClassName}_handler.g.cs", SourceText.From(source, Encoding.UTF8));
-        });
+        // Generate source for each command handler class.
+        context.RegisterSourceOutput(pipeline, GenerateClassSource);
 
-        context.RegisterSourceOutput(pipeline.Collect(), static (context, models) =>
+        // Generate RootCommand extension methods in a separate file.
+        context.RegisterSourceOutput(partialPipeline.Collect(), static (context, models) =>
         {
             if (models.IsDefaultOrEmpty)
                 return;
@@ -67,5 +60,29 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
         GeneratorAttributeSyntaxContext context, CancellationToken ct)
     {
         return CommandHandlerModelBuilder.FromSyntaxContext(context, ct);
+    }
+
+    private static void GenerateClassSource(SourceProductionContext context, CommandHandlerModel model)
+    {
+        if (!model.IsPartial)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.NonPartialCommandHandler,
+                model.Location,
+                model.ClassName));
+
+            return;
+        }
+
+        if (!model.HasExecuteMethod)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.MissingExecuteMethod,
+                model.Location,
+                model.ClassName));
+        }
+
+        string source = HandlerEmitter.Emit(model);
+        context.AddSource($"{model.ClassName}_handler.g.cs", SourceText.From(source, Encoding.UTF8));
     }
 }

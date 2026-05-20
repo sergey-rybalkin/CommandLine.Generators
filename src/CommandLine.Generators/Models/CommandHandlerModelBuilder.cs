@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CommandLine.Generators.Models;
 
@@ -43,6 +45,9 @@ internal static class CommandHandlerModelBuilder
 
         ImmutableArray<CommandParameterModel> parameters = ExtractParameters(containingType, ct);
 
+        ClassDeclarationSyntax classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
+        bool isPartial = classDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword);
+
         return new CommandHandlerModel(
             name,
             description,
@@ -51,7 +56,8 @@ internal static class CommandHandlerModelBuilder
             hasSyncExecute || hasAsyncExecute,
             !hasSyncExecute && hasAsyncExecute,
             parameters,
-            location);
+            location,
+            isPartial);
     }
 
     private static bool IsAsyncExecuteSignature(IMethodSymbol method)
@@ -229,10 +235,10 @@ internal static class CommandHandlerModelBuilder
         switch (value)
         {
             case string s:
-                literal = Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(s, quote: true);
+                literal = SymbolDisplay.FormatLiteral(s, quote: true);
                 return true;
             case char c:
-                literal = Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(c, quote: true);
+                literal = SymbolDisplay.FormatLiteral(c, quote: true);
                 return true;
             case bool b:
                 literal = b ? "true" : "false";
