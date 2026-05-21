@@ -83,6 +83,7 @@ jobs:
 
       - name: Fail if tag already exists
         shell: bash
+        if: ${{ inputs.create_tag }}
         run: |
           set -euo pipefail
           TAG="v${{ inputs.version_number }}"
