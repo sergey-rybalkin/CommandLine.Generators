@@ -3,8 +3,8 @@ name: Publish Release
 on:
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: "Release tag, e.g. v1.4.2"
+      version_number:
+        description: "Version number, e.g. 1.4.2"
         required: true
         type: string
       create_tag:
@@ -23,11 +23,10 @@ permissions:
 
 env:
   DEFAULT_BRANCH: main
-  TAG_PREFIX: v
 
 jobs:
   publish:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -35,29 +34,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v3.0.0
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build package version
-        shell: pwsh
-        run: |
-          $tag = '${{ inputs.tag_name }}'
-
-          if (-not $tag.StartsWith($env:TAG_PREFIX)) {
-            throw "Invalid tag format: $tag"
-          }
-
-          $version = $tag.Substring($env:TAG_PREFIX.Length)
-          "PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
-
       - name: Build
-        run: msbuild /m /p:Configuration=Release /p:Version=$env:PACKAGE_VERSION
+        run: dotnet build --configuration Release -p:Version=${{ inputs.version_number }}
 
       - name: Pack NuGet package
-        run: dotnet pack ./src/CommandLine.Generators/CommandLine.Generators.csproj --configuration Release /p:Version=$env:PACKAGE_VERSION
+        run: dotnet pack ./src/CommandLine.Generators/CommandLine.Generators.csproj --configuration Release -p:Version=${{ inputs.version_number }}
 
       - name: Publish NuGet package
         run: dotnet nuget push **/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s
@@ -77,15 +74,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ inputs.tag_name }}"
-          if [[ "$TAG" != "$TAG_PREFIX"* ]]; then
-            echo "Invalid tag format: $TAG"
-            exit 1
-          fi
+          VERSION="${{ inputs.version_number }}"
 
-          VERSION_PART="${TAG:${#TAG_PREFIX}}"
-          [[ "$VERSION_PART" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || {
-            echo "Invalid tag format: $TAG"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || {
+            echo "Invalid version format: $VERSION"
             exit 1
           }
 
@@ -93,7 +85,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ inputs.tag_name }}"
+          TAG="v${{ inputs.version_number }}"
           git fetch --tags --force
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag already exists: $TAG"
@@ -106,7 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           ACTOR="${{ github.triggering_actor || github.actor }}"
-          TAG="${{ inputs.tag_name }}"
+          TAG="v${{ inputs.version_number }}"
 
           git config user.name "$ACTOR"
           git config user.email "$ACTOR@users.noreply.github.com"
@@ -119,14 +111,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ inputs.tag_name }}"
-          VERSION_PART="${TAG:${#TAG_PREFIX}}"
-          echo "value=Version $VERSION_PART" >> "$GITHUB_OUTPUT"
+          VERSION="${{ inputs.version_number}}"
+          echo "value=Version $VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Release
         uses: softprops/action-gh-release@v3
         with:
           prerelease: ${{ inputs.prerelease }}
-          tag_name: ${{ inputs.tag_name }}
+          tag_name: v${{ inputs.version_number }}
           generate_release_notes: true
           name: ${{ steps.release_name.outputs.value }}
