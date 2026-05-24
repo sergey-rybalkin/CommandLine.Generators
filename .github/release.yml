@@ -11,13 +11,13 @@ changelog:
       labels:
         - enhancement
         - feature
-    - title: Bug Fixes 🛠
+    - title: Bug Fixes 🐛
       labels:
         - bug
     - title: Performance Improvements ⚡
       labels:
         - performance
-    - title: Documentation 📝
+    - title: Documentation 📚
       labels:
         - documentation
     - title: Other Changes 🔧

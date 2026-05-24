@@ -4,7 +4,7 @@
 [![CI Build](https://github.com/sergey-rybalkin/CommandLine.Generators/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sergey-rybalkin/CommandLine.Generators/actions/workflows/ci.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/CommandLine.Generators)](https://www.nuget.org/packages/CommandLine.Generators)
 
-CommandLine.Generators is a Roslyn incremental source generator for `System.CommandLine` package. It enables declarative command handler definitions by scanning classes marked with attributes and generating registration code scaffolding.
+CommandLine.Generators is a Roslyn incremental source generator for [`System.CommandLine`](https://www.nuget.org/packages/System.CommandLine) package. It enables declarative command handler definitions by scanning classes marked with attributes and generating registration code scaffolding.
 
 ## Features
 
@@ -163,11 +163,11 @@ Only top-level classes declared in a named namespace are processed. Nested types
 
 ## Diagnostics
 
-| Id | Severity | Description |
-| --- | --- | --- |
-| `CMDGEN001` | Warning | Reported on a `[Command]`-annotated class that declares neither `int Execute()` nor `Task<int> ExecuteAsync(CancellationToken)`. The generator still produces `GetCommandDefinition` and `FromParseResult`, but does not wire `SetAction`. |
-| `CMDGEN002` | Warning | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code. |
-| `CMDGEN003` | Warning | Reported on a `[Command]`-annotated class that declares multiple constructors. No code is generated for this class. The class must declare a single constructor so the generator can resolve command options unambiguously. |
+| Id          | Severity | Description                                                                                                                                                                                                                                |
+| ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CMDGEN001` | Warning  | Reported on a `[Command]`-annotated class that declares neither `int Execute()` nor `Task<int> ExecuteAsync(CancellationToken)`. The generator still produces `GetCommandDefinition` and `FromParseResult`, but does not wire `SetAction`. |
+| `CMDGEN002` | Warning  | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code.  |
+| `CMDGEN003` | Warning  | Reported on a `[Command]`-annotated class that declares multiple constructors. No code is generated for this class. The class must declare a single constructor so the generator can resolve command options unambiguously.                |
 
 Generated file names follow this pattern:
 
