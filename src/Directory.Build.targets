@@ -1,12 +1,12 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <!-- Set this to False if git executable is not available or building outside of git repository. 
+    <!-- Set this to False if git executable is not available or building outside of git repository.
          'Version' parameter or environment variable should take precedence over git, 1.0.0 is the default value that MSBuild sets -->
     <UpdateVersionFromGit Condition="'$(UpdateVersionFromGit)' == '' And '$(Version)' == '1.0.0'">True</UpdateVersionFromGit>
   </PropertyGroup>
 
-  <!-- Sets version info based on the latest git tag name and revision number in <major>.<minor>.<revision> format
+  <!-- Sets version info based on the latest git tag name in v<major>.<minor>.<revision> format
        which is expected to be used with AssemblyVersion and AssemblyFileVersion. AssemblyInformationalVersion will be automatically
        populated by MSBuild and postfixed with SourceRevisionId property which has current git commit has, see
        https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/8.0/source-link -->
@@ -32,9 +32,10 @@
     <PropertyGroup Condition="'$(SourceRevisionId)' != ''">
       <GitVersionHashIndex>$(GitVersion.LastIndexOf('-'))</GitVersionHashIndex>
       <GitVersionNormalized>$(GitVersion.Replace('-', '.'))</GitVersionNormalized>
-      <Version Condition="'$(GitVersionHashIndex)' != '-1'">$([System.String]::Copy('$(GitVersionNormalized)').Substring(0, $(GitVersionHashIndex)))</Version>
-      <AssemblyVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version).0</AssemblyVersion>
-      <FileVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version).0</FileVersion>
+<!--       <Version Condition="'$(GitVersionHashIndex)' != '-1'">$([System.String]::Copy('$(GitVersionNormalized)').Substring(1, $(GitVersionHashIndex)))</Version> -->
+      <Version Condition="'$(GitVersionHashIndex)' != '-1'">$([System.String]::Copy('$(GitVersionNormalized)').Substring(1, $([MSBuild]::Subtract($(GitVersionHashIndex), 1))))</Version>
+      <AssemblyVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version)</AssemblyVersion>
+      <FileVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version)</FileVersion>
       <InformationalVersion Condition="'$(GitVersionHashIndex)' != '-1'">$(Version)</InformationalVersion>
     </PropertyGroup>
   </Target>
