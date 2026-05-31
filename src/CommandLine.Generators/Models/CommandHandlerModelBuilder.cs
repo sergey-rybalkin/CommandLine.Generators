@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
-using System.Globalization;
+using CommandLine.Generators.Emit;
+using CommandLine.Generators.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,6 +10,11 @@ namespace CommandLine.Generators.Models;
 /// <summary>
 /// Provides functionality to build <see cref="CommandHandlerModel"/> instances from syntax context.
 /// </summary>
+/// <remarks>
+/// Do not validate syntax or throw any exceptions here. If the syntax is invalid, simply return a model
+/// with default values or missing information. The generator should be able to handle such cases
+/// gracefully and report diagnostics as needed without relying on exceptions from this builder.
+/// </remarks>
 internal static class CommandHandlerModelBuilder
 {
     internal static CommandHandlerModel FromSyntaxContext(
@@ -17,26 +23,11 @@ internal static class CommandHandlerModelBuilder
     {
         INamedTypeSymbol containingType = (INamedTypeSymbol)context.TargetSymbol;
 
-        // Only top-level classes in a named namespace are supported.
-        if (containingType.ContainingType is not null
-            || containingType.ContainingNamespace.IsGlobalNamespace)
-        {
-            return default;
-        }
-
-        // Look for Execute method that can be set as an action handler for the command.
-        bool hasSyncExecute = containingType.GetMembers(Constants.ExecuteMethodName)
-            .OfType<IMethodSymbol>()
-            .Any(m =>
-                !m.IsStatic &&
-                m.Parameters.Length == 0 &&
-                m.ReturnType.SpecialType == SpecialType.System_Int32);
-
-        bool hasAsyncExecute = containingType.GetMembers(Constants.ExecuteAsyncMethodName)
-            .OfType<IMethodSymbol>()
-            .Any(IsAsyncExecuteSignature);
-
-        Location location = containingType.Locations[0];
+        ResolveExecuteMethods(
+            context.SemanticModel.Compilation,
+            containingType,
+            out bool hasSyncExecute,
+            out bool hasAsyncExecute);
 
         AttributeData commandAttr = context.Attributes[0];
         string name = (string?)commandAttr.ConstructorArguments[0].Value ?? "";
@@ -57,28 +48,28 @@ internal static class CommandHandlerModelBuilder
             hasSyncExecute || hasAsyncExecute,
             !hasSyncExecute && hasAsyncExecute,
             parameters,
-            location,
+            containingType.Locations[0],
             isPartial,
-            hasMultipleConstructors);
+            hasMultipleConstructors,
+            containingType.ContainingType is not null);
     }
 
-    private static bool IsAsyncExecuteSignature(IMethodSymbol method)
+    private static void ResolveExecuteMethods(
+        Compilation compilation,
+        INamedTypeSymbol containingType,
+        out bool hasSyncExecute,
+        out bool hasAsyncExecute)
     {
-        // Should be async Task<int> ExecuteAsync(CancellationToken ct)
-        if (method.IsStatic || method.Parameters.Length is not 1)
-            return false;
+        IMethodSymbol? candidateMethod = containingType.LookupMethodInClassHierarchy(
+            compilation,
+            Constants.ExecuteAsyncMethodName,
+            p => p.Length is 1 && p[0].Type.ToDisplayString() is "System.Threading.CancellationToken",
+            true);
+        hasAsyncExecute = candidateMethod is not null;
 
-        if (method.ReturnType is not INamedTypeSymbol returnType
-            || returnType.TypeArguments.Length is not 1
-            || returnType.TypeArguments[0].SpecialType is not SpecialType.System_Int32
-            || returnType.ConstructedFrom.ToDisplayString() is not "System.Threading.Tasks.Task<TResult>")
-        {
-            return false;
-        }
-
-        IParameterSymbol parameter = method.Parameters[0];
-
-        return parameter.Type.ToDisplayString() is "System.Threading.CancellationToken";
+        candidateMethod = containingType.LookupMethodInClassHierarchy(
+            compilation, Constants.ExecuteMethodName, p => p.Length is 0);
+        hasSyncExecute = candidateMethod is not null;
     }
 
     private static ImmutableArray<CommandParameterModel> ExtractParameters(
@@ -115,13 +106,7 @@ internal static class CommandHandlerModelBuilder
 
             ReadOptionAttribute(attr, out string description, out string? valueHint, out char? alias);
 
-            string paramTypeName = parameter.Type.ToDisplayString(
-                SymbolDisplayFormat.FullyQualifiedFormat
-                    .WithMiscellaneousOptions(
-                        SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions
-                        | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier
-                        | SymbolDisplayMiscellaneousOptions.UseSpecialTypes));
-
+            string paramTypeName = parameter.Type.ToDisplayString(TypeSymbolExtensions.HumanReadableFormat);
             bool isNullable = IsNullable(parameter);
             ResolveDefault(parameter, out bool hasDefault, out string? defaultLiteral);
 
@@ -174,7 +159,7 @@ internal static class CommandHandlerModelBuilder
         if (!hasDefault)
             return;
 
-        if (TryFormatLiteral(parameter.ExplicitDefaultValue, parameter.Type, out string literal))
+        if (Literal.TryFormat(parameter.ExplicitDefaultValue, parameter.Type, out string literal))
             defaultLiteral = literal;
         else
             hasDefault = false;
@@ -187,109 +172,5 @@ internal static class CommandHandlerModelBuilder
             return type.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T;
 
         return parameter.NullableAnnotation is NullableAnnotation.Annotated;
-    }
-
-    private static bool TryFormatLiteral(object? value, ITypeSymbol type, out string literal)
-    {
-        if (value is null)
-        {
-            literal = "null";
-
-            return true;
-        }
-
-        // Unwrap Nullable<T> to its underlying type for enum handling.
-        ITypeSymbol effectiveType = type;
-        if (type is INamedTypeSymbol named
-            && named.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T
-            && named.TypeArguments.Length is 1)
-        {
-            effectiveType = named.TypeArguments[0];
-        }
-
-        if (effectiveType.TypeKind is TypeKind.Enum)
-        {
-            literal = FormatEnumLiteral((INamedTypeSymbol)effectiveType, value);
-
-            return true;
-        }
-
-        return TryFormatPrimitive(value, out literal);
-    }
-
-    private static string FormatEnumLiteral(INamedTypeSymbol enumType, object value)
-    {
-        foreach (ISymbol member in enumType.GetMembers())
-        {
-            if (member is IFieldSymbol field && field.HasConstantValue
-                && Equals(field.ConstantValue, value))
-            {
-                return $"{enumType.ToDisplayString()}.{field.Name}";
-            }
-        }
-
-        return $"({enumType.ToDisplayString()})"
-            + Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
-    }
-
-    private static bool TryFormatPrimitive(object value, out string literal)
-    {
-        switch (value)
-        {
-            case string s:
-                literal = SymbolDisplay.FormatLiteral(s, quote: true);
-                return true;
-            case char c:
-                literal = SymbolDisplay.FormatLiteral(c, quote: true);
-                return true;
-            case bool b:
-                literal = b ? "true" : "false";
-                return true;
-            default:
-                return TryFormatNumeric(value, out literal);
-        }
-    }
-
-    private static bool TryFormatNumeric(object value, out string literal)
-    {
-        switch (value)
-        {
-            case byte by:
-                literal = by.ToString(CultureInfo.InvariantCulture);
-                return true;
-            case sbyte sb:
-                literal = sb.ToString(CultureInfo.InvariantCulture);
-                return true;
-            case short sh:
-                literal = sh.ToString(CultureInfo.InvariantCulture);
-                return true;
-            case ushort ush:
-                literal = ush.ToString(CultureInfo.InvariantCulture);
-                return true;
-            case int i:
-                literal = i.ToString(CultureInfo.InvariantCulture);
-                return true;
-            case uint ui:
-                literal = ui.ToString(CultureInfo.InvariantCulture) + "U";
-                return true;
-            case long l:
-                literal = l.ToString(CultureInfo.InvariantCulture) + "L";
-                return true;
-            case ulong ul:
-                literal = ul.ToString(CultureInfo.InvariantCulture) + "UL";
-                return true;
-            case float f:
-                literal = f.ToString("R", CultureInfo.InvariantCulture) + "F";
-                return true;
-            case double d:
-                literal = d.ToString("R", CultureInfo.InvariantCulture) + "D";
-                return true;
-            case decimal m:
-                literal = m.ToString(CultureInfo.InvariantCulture) + "M";
-                return true;
-            default:
-                literal = "";
-                return false;
-        }
     }
 }

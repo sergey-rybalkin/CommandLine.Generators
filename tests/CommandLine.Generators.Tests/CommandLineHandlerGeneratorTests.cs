@@ -10,19 +10,17 @@ namespace CommandLine.Generators.Tests;
 public sealed class CommandLineHandlerGeneratorTests
 {
     [Test]
-    public async Task Emits_attributes_file_in_post_initialization()
+    public void Emits_attributes_file_in_post_initialization()
     {
         GeneratorRunResult result = GeneratorTestHost.Run(string.Empty);
 
         result.GeneratedSources.ShouldContainKey("CommandLine.Attributes.g.cs");
         result.GeneratedSources["CommandLine.Attributes.g.cs"].ShouldContain("class CommandAttribute");
         result.GeneratedSources["CommandLine.Attributes.g.cs"].ShouldContain("class OptionAttribute");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Generates_handler_partial_with_expected_methods()
+    public void Generates_handler_partial_with_expected_methods()
     {
         const string source = """
             using System.IO;
@@ -55,12 +53,10 @@ public sealed class CommandLineHandlerGeneratorTests
             $"partial void {Constants.OnCommandCreatedMethodName}(ServeCommand handler, ParseResult pr);");
 
         EnsureNoErrors(result);
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Wires_sync_execute_via_set_action_when_execute_method_present()
+    public void Wires_sync_execute_via_set_action_when_execute_method_present()
     {
         const string source = $$"""
             using CommandLine.Generators;
@@ -81,12 +77,10 @@ public sealed class CommandLineHandlerGeneratorTests
         generated.ShouldContain($"{Constants.ExecuteMethodName}()");
 
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Wires_async_execute_when_execute_async_method_present()
+    public void Wires_async_execute_when_execute_async_method_present()
     {
         const string source =
 $$"""
@@ -110,12 +104,10 @@ public partial class AsyncCommand
         generated.ShouldContain($"{Constants.ExecuteAsyncMethodName}(ct)");
 
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Reports_diagnostics_when_no_execute_method_defined_but_still_emits_partial()
+    public void Reports_diagnostics_when_no_execute_method_defined_but_still_emits_partial()
     {
         const string source = """
             using CommandLine.Generators;
@@ -134,12 +126,10 @@ public partial class AsyncCommand
         result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         result.GeneratedSources.ShouldContainKey("NoopCommand_handler.g.cs");
         result.GeneratedSources["NoopCommand_handler.g.cs"].ShouldNotContain("SetAction");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Marks_nullable_parameters_as_not_required()
+    public void Marks_nullable_parameters_as_not_required()
     {
         const string source = """
             using CommandLine.Generators;
@@ -166,12 +156,10 @@ public partial class AsyncCommand
         generated.ShouldContain("Option<string?> name");
         generated.ShouldNotContain("Required = true");
         generated.ShouldNotContain("DefaultValueFactory");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Emits_default_value_factory_for_parameters_with_default_value()
+    public void Emits_default_value_factory_for_parameters_with_default_value()
     {
         const string source = """
             using CommandLine.Generators;
@@ -195,12 +183,10 @@ public partial class AsyncCommand
         string generated = result.GeneratedSources["DefaultedCommand_handler.g.cs"];
         generated.ShouldContain("DefaultValueFactory = static _ => 8080");
         generated.ShouldContain("Required = false");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Emits_alias_and_help_name_when_option_attribute_specifies_them()
+    public void Emits_alias_and_help_name_when_option_attribute_specifies_them()
     {
         const string source = """
             using CommandLine.Generators;
@@ -220,22 +206,13 @@ public partial class AsyncCommand
         string generated = result.GeneratedSources["AliasCommand_handler.g.cs"];
         generated.ShouldContain("HelpName = @\"port\"");
         generated.ShouldContain("port.Aliases.Add(\"-p\");");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Ignores_nested_classes_and_global_namespace_classes()
+    public void Reports_nested_classes()
     {
         const string source = """
             using CommandLine.Generators;
-
-            [Command("global", "")]
-            public partial class GlobalCommand
-            {
-                public GlobalCommand() { }
-                public int Execute() => 0;
-            }
 
             namespace Sample;
 
@@ -255,12 +232,12 @@ public partial class AsyncCommand
         result.GeneratedSources.ShouldNotContainKey("GlobalCommand_handler.g.cs");
         result.GeneratedSources.ShouldNotContainKey("NestedCommand_handler.g.cs");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-
-        await Task.CompletedTask;
+        result.GeneratorDiagnostics.ShouldContain(
+            d => d.Id == Diagnostics.NestedCommandHandlerNotSupportedId);
     }
 
     [Test]
-    public async Task Generates_root_command_extensions_aggregator_with_all_handlers()
+    public void Generates_root_command_extensions_aggregator_with_all_handlers()
     {
         const string source = """
             using CommandLine.Generators;
@@ -295,12 +272,10 @@ public partial class AsyncCommand
         aggregator.ShouldContain("internal static void AddCommandsFromAssembly(this RootCommand root)");
         aggregator.ShouldContain($"root.Add(global::A.X.{Constants.GetCommandDefinitionMethodName}());");
         aggregator.ShouldContain($"root.Add(global::B.Y.{Constants.GetCommandDefinitionMethodName}());");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Reports_when_class_is_not_partial()
+    public void Reports_when_class_is_not_partial()
     {
         const string source = """
             using CommandLine.Generators;
@@ -319,12 +294,10 @@ public partial class AsyncCommand
 
         result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.NonPartialCommandHandlerId);
         result.GeneratedSources.ShouldNotContainKey("NonPartialCommand_handler.g.cs");
-
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Reports_when_class_has_multiple_constructors()
+    public void Reports_when_class_has_multiple_constructors()
     {
         const string source = """
             using CommandLine.Generators;
@@ -347,8 +320,6 @@ public partial class AsyncCommand
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         result.GeneratedSources.ShouldNotContainKey("MultipleConstructorsCommand_handler.g.cs");
         result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
-
-        await Task.CompletedTask;
     }
 
     private static void EnsureNoErrors(GeneratorRunResult result)

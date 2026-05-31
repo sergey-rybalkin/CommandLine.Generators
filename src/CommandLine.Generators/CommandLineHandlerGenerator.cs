@@ -39,8 +39,8 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
             .Where(static model => !string.IsNullOrEmpty(model.ClassName)
                 && !string.IsNullOrEmpty(model.NamespaceName));
 
-        IncrementalValuesProvider<CommandHandlerModel> partialPipeline =
-            pipeline.Where(static model => model.IsPartial && !model.HasMultipleConstructors);
+        IncrementalValuesProvider<CommandHandlerModel> partialPipeline = pipeline.Where(
+                static model => model.IsPartial && !model.HasMultipleConstructors && !model.IsNestedClass);
 
         // Generate source for each command handler class.
         context.RegisterSourceOutput(pipeline, GenerateClassSource);
@@ -64,6 +64,16 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
 
     private static void GenerateClassSource(SourceProductionContext context, CommandHandlerModel model)
     {
+        if (model.IsNestedClass)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.NestedCommandHandlerNotSupported,
+                model.Location,
+                model.ClassName));
+
+            return;
+        }
+
         if (model.HasMultipleConstructors)
         {
             context.ReportDiagnostic(Diagnostic.Create(

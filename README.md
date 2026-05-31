@@ -149,7 +149,7 @@ partial class ServeCommand
 
 ## Option emission rules
 
-- The long option name is the kebab-cased parameter name (e.g. `rootPath` ? `--root-path`).
+- The long option name is the kebab-cased parameter name (e.g. `rootPath` -> `--root-path`).
 - `Description` is always emitted from the `OptionAttribute` description argument.
 - `HelpName` is emitted when `valueHint` is provided.
 - A single-character `alias` is emitted via `option.Aliases.Add("-x")`.
@@ -165,9 +165,10 @@ Only top-level classes declared in a named namespace are processed. Nested types
 
 | Id          | Severity | Description                                                                                                                                                                                                                                |
 | ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `CMDGEN001` | Warning  | Reported on a `[Command]`-annotated class that declares neither `int Execute()` nor `Task<int> ExecuteAsync(CancellationToken)`. The generator still produces `GetCommandDefinition` and `FromParseResult`, but does not wire `SetAction`. |
+| `CMDGEN001` | Warning  | Reported on a `[Command]`-annotated class that declares or inherits neither `public`/`internal` `int Execute()` nor `public`/`internal` `Task<int> ExecuteAsync(CancellationToken)`. The generator still produces `GetCommandDefinition` and `FromParseResult`, but does not wire `SetAction`. |
 | `CMDGEN002` | Warning  | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code.  |
 | `CMDGEN003` | Warning  | Reported on a `[Command]`-annotated class that declares multiple constructors. No code is generated for this class. The class must declare a single constructor so the generator can resolve command options unambiguously.                |
+| `CMDGEN004` | Warning  | Reported on a `[Command]`-annotated class that is nested. No code is generated for this class. The class must be a top-level, non-nested class so the generator can emit registration code.                                              |
 
 Generated file names follow this pattern:
 
