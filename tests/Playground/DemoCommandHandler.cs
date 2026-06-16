@@ -1,9 +1,10 @@
+using System.CommandLine;
 using CommandLine.Generators;
 
 namespace Playground;
 
 [Command("demo", "Demo command handler")]
-public partial class DemoCommandHandler
+public partial class DemoCommandHandler : CommandHandlerBase
 {
     private readonly string _val1;
     private readonly int _val2;
@@ -22,7 +23,7 @@ public partial class DemoCommandHandler
         _lastValue = lastValue;
     }
 
-    public int Execute()
+    protected override int ExecuteInternal()
     {
         Console.WriteLine($"String value: {_val1}");
         Console.WriteLine($"Integer value: {_val2}");

@@ -55,6 +55,7 @@ This project is a Roslyn source generator that enables declarative type CLI comm
 ## Additional Resources
 
 - [Project README](../readme.md)
+- [C# Guidelines](./instructions/csharp.instructions.md)
 
 ---
 

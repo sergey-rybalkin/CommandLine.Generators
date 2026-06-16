@@ -22,7 +22,8 @@ public class CommandHandlerModelTests
         ImmutableArray<CommandParameterModel>? parameters = null,
         Location? location = null,
         bool isPartial = true,
-        bool hasMultipleConstructors = false)
+        bool hasMultipleConstructors = false,
+        bool isNestedClass = false)
     {
         return new CommandHandlerModel(
             name,
@@ -34,92 +35,94 @@ public class CommandHandlerModelTests
             parameters ?? ImmutableArray<CommandParameterModel>.Empty,
             location ?? Location.None,
             isPartial,
-            hasMultipleConstructors);
+            hasMultipleConstructors,
+            isNestedClass);
     }
 
     [Test]
-    public async Task Equals_returns_true_for_identical_models()
+    public void Equals_returns_true_for_identical_models()
     {
         CommandHandlerModel a = CreateModel();
         CommandHandlerModel b = CreateModel();
 
         a.Equals(b).ShouldBeTrue();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_name_differs()
+    public void Equals_returns_false_when_name_differs()
     {
         CommandHandlerModel a = CreateModel(name: "cmd-a");
         CommandHandlerModel b = CreateModel(name: "cmd-b");
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_description_differs()
+    public void Equals_returns_false_when_description_differs()
     {
         CommandHandlerModel a = CreateModel(description: "desc A");
         CommandHandlerModel b = CreateModel(description: "desc B");
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_class_name_differs()
+    public void Equals_returns_false_when_class_name_differs()
     {
         CommandHandlerModel a = CreateModel(className: "ClassA");
         CommandHandlerModel b = CreateModel(className: "ClassB");
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_namespace_name_differs()
+    public void Equals_returns_false_when_namespace_name_differs()
     {
         CommandHandlerModel a = CreateModel(namespaceName: "Ns.A");
         CommandHandlerModel b = CreateModel(namespaceName: "Ns.B");
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_has_execute_differs()
+    public void Equals_returns_false_when_has_execute_differs()
     {
         CommandHandlerModel a = CreateModel(hasExecute: true);
         CommandHandlerModel b = CreateModel(hasExecute: false);
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_has_multiple_constructors_differs()
+    public void Equals_returns_false_when_has_multiple_constructors_differs()
     {
         CommandHandlerModel a = CreateModel(hasMultipleConstructors: true);
         CommandHandlerModel b = CreateModel(hasMultipleConstructors: false);
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_true_when_parameters_are_equal()
+    public void Equals_returns_false_when_is_nested_class_differs()
+    {
+        CommandHandlerModel a = CreateModel(isNestedClass: true);
+        CommandHandlerModel b = CreateModel(isNestedClass: false);
+
+        a.Equals(b).ShouldBeFalse();
+    }
+
+    [Test]
+    public void Equals_returns_true_when_parameters_are_equal()
     {
         ImmutableArray<CommandParameterModel> parameters = [MakeParam("p1"), MakeParam("p2")];
         CommandHandlerModel a = CreateModel(parameters: parameters);
         CommandHandlerModel b = CreateModel(parameters: parameters);
 
         a.Equals(b).ShouldBeTrue();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_parameters_differ()
+    public void Equals_returns_false_when_parameters_differ()
     {
         ImmutableArray<CommandParameterModel> paramsA = [MakeParam("p1")];
         ImmutableArray<CommandParameterModel> paramsB = [MakeParam("p2")];
@@ -127,11 +130,10 @@ public class CommandHandlerModelTests
         CommandHandlerModel b = CreateModel(parameters: paramsB);
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_returns_false_when_parameters_count_differs()
+    public void Equals_returns_false_when_parameters_count_differs()
     {
         ImmutableArray<CommandParameterModel> paramsA = [MakeParam("p1"), MakeParam("p2")];
         ImmutableArray<CommandParameterModel> paramsB = [MakeParam("p1")];
@@ -139,65 +141,58 @@ public class CommandHandlerModelTests
         CommandHandlerModel b = CreateModel(parameters: paramsB);
 
         a.Equals(b).ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Equals_ignores_location_differences()
+    public void Equals_ignores_location_differences()
     {
         CommandHandlerModel a = CreateModel(location: Location.None);
         CommandHandlerModel b = CreateModel(location: Location.None);
 
         a.Equals(b).ShouldBeTrue();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Object_equals_returns_true_for_identical_models()
+    public void Object_equals_returns_true_for_identical_models()
     {
         CommandHandlerModel a = CreateModel();
         object b = CreateModel();
 
         a.Equals(b).ShouldBeTrue();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Object_equals_returns_false_for_different_type()
+    public void Object_equals_returns_false_for_different_type()
     {
         CommandHandlerModel a = CreateModel();
 
         a.Equals("not a model").ShouldBeFalse();
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Get_hash_code_returns_same_value_for_identical_models()
+    public void Get_hash_code_returns_same_value_for_identical_models()
     {
         CommandHandlerModel a = CreateModel();
         CommandHandlerModel b = CreateModel();
 
         a.GetHashCode().ShouldBe(b.GetHashCode());
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Get_hash_code_returns_different_value_when_name_differs()
+    public void Get_hash_code_returns_different_value_when_name_differs()
     {
         CommandHandlerModel a = CreateModel(name: "cmd-a");
         CommandHandlerModel b = CreateModel(name: "cmd-b");
 
         a.GetHashCode().ShouldNotBe(b.GetHashCode());
-        await Task.CompletedTask;
     }
 
     [Test]
-    public async Task Get_hash_code_returns_different_value_when_parameters_differ()
+    public void Get_hash_code_returns_different_value_when_parameters_differ()
     {
         CommandHandlerModel a = CreateModel(parameters: ImmutableArray.Create(MakeParam("p1")));
         CommandHandlerModel b = CreateModel(parameters: ImmutableArray.Create(MakeParam("p2")));
 
         a.GetHashCode().ShouldNotBe(b.GetHashCode());
-        await Task.CompletedTask;
     }
 }

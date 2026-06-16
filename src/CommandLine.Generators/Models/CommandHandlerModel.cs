@@ -4,8 +4,15 @@ using Microsoft.CodeAnalysis;
 namespace CommandLine.Generators.Models;
 
 /// <summary>
-/// Stores metadata from the CommandAttribute applied to a class.
+/// Stores metadata from the CommandAttribute applied to a class. Should be a record struct, but records
+/// aren't supported in net standard 2.0.
 /// </summary>
+/// <remarks>
+/// Do not store any Roslyn-specific types (e.g., ISymbol, ITypeSymbol) in this struct, as it may be used
+/// across multiple generator runs and those types are not guaranteed to be valid across runs. Instead,
+/// extract necessary information from those types and store them in simple properties (e.g., strings,
+/// bools, etc.) that can be safely compared and used across generator runs.
+/// </remarks>
 internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
 {
     /// <summary>
@@ -21,6 +28,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     /// <param name="location">The source location of the command handler class declaration.</param>
     /// <param name="isPartial">True if the target type is declared as partial, false otherwise.</param>
     /// <param name="hasMultipleConstructors">True if the target type declares multiple constructors.</param>
+    /// <param name="isNestedClass">True if the target type is nested in another type.</param>
     public CommandHandlerModel(
         string name,
         string description,
@@ -31,7 +39,8 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
         ImmutableArray<CommandParameterModel> parameters,
         Location location,
         bool isPartial,
-        bool hasMultipleConstructors)
+        bool hasMultipleConstructors,
+        bool isNestedClass)
     {
         Name = name;
         Description = description;
@@ -43,6 +52,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
         Location = location;
         IsPartial = isPartial;
         HasMultipleConstructors = hasMultipleConstructors;
+        IsNestedClass = isNestedClass;
     }
 
     /// <summary>
@@ -95,6 +105,11 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     /// </summary>
     public bool HasMultipleConstructors { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the target type is nested in another type.
+    /// </summary>
+    public bool IsNestedClass { get; }
+
     /// <inheritdoc/>
     public bool Equals(CommandHandlerModel other)
     {
@@ -106,6 +121,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
             || HasAsyncExecute != other.HasAsyncExecute
             || IsPartial != other.IsPartial
             || HasMultipleConstructors != other.HasMultipleConstructors
+            || IsNestedClass != other.IsNestedClass
             || Parameters.Length != other.Parameters.Length)
         {
             return false;
@@ -140,11 +156,20 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
             hash = (hash * 31) + HasAsyncExecute.GetHashCode();
             hash = (hash * 31) + IsPartial.GetHashCode();
             hash = (hash * 31) + HasMultipleConstructors.GetHashCode();
+            hash = (hash * 31) + IsNestedClass.GetHashCode();
 
             foreach (CommandParameterModel parameter in Parameters)
                 hash = (hash * 31) + parameter.GetHashCode();
 
             return hash;
         }
+    }
+
+    /// <summary>
+    /// Gets full class name including the namespace.
+    /// </summary>
+    public string GetFullClassName()
+    {
+        return string.IsNullOrEmpty(NamespaceName) ? ClassName : $"global::{NamespaceName}.{ClassName}";
     }
 }

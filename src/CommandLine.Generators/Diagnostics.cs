@@ -40,32 +40,55 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         description: MultipleConstructorsCommandHandlerDescription);
 
+    /// <summary>
+    /// Roslyn diagnostics that should be reported on nested command handlers that are not supported.
+    /// </summary>
+    public static readonly DiagnosticDescriptor NestedCommandHandlerNotSupported = new(
+        id: NestedCommandHandlerNotSupportedId,
+        title: "Nested command handlers are not supported",
+        messageFormat: NestedCommandHandlerNotSupportedMessage,
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: NestedCommandHandlerNotSupportedDescription);
+
     internal const string MissingExecuteMethodId = "CMDGEN001";
 
     internal const string NonPartialCommandHandlerId = "CMDGEN002";
 
     internal const string MultipleConstructorsCommandHandlerId = "CMDGEN003";
 
+    internal const string NestedCommandHandlerNotSupportedId = "CMDGEN004";
+
     private const string MissingExecuteMessage =
-        "Type '{0}' must declare either 'int Execute()' or 'Task<int> ExecuteAsync(CancellationToken)'";
+        "Type '{0}' must declare or inherit public/internal 'int Execute()' or " +
+        "public/internal 'Task<int> ExecuteAsync(CancellationToken)'";
 
     private const string MissingExecuteDescription =
-        "Command handlers should declare either 'int Execute()' or "
-        + "'Task<int> ExecuteAsync(CancellationToken)' to be invoked from the command line.";
+        "Command handlers should declare or inherit public/internal 'int Execute()' or " +
+        "public/internal 'Task<int> ExecuteAsync(CancellationToken)' to be invoked from the command line.";
 
     private const string NonPartialCommandHandlerMessage =
-        "Type '{0}' is marked with [Command] but is not declared as partial. "
-        + "Source generator requires partial classes to emit code.";
+        "Type '{0}' is marked with [Command] but is not declared as partial. " +
+        "Source generator requires partial classes to emit code.";
 
     private const string NonPartialCommandHandlerDescription =
-        "Command handler classes must be declared as partial so that the source generator "
-        + "can emit the second partial class file with registration code.";
+        "Command handler classes must be declared as partial so that the source generator " +
+        "can emit the second partial class file with registration code.";
 
     private const string MultipleConstructorsCommandHandlerMessage =
-        "Type '{0}' is marked with [Command] but declares multiple constructors. "
-        + "Source generator requires a single constructor to resolve command options.";
+        "Type '{0}' is marked with [Command] but declares multiple constructors. " +
+        "Source generator requires a single constructor to resolve command options.";
 
     private const string MultipleConstructorsCommandHandlerDescription =
-        "Command handler classes must declare a single constructor so that the source generator "
-        + "can resolve constructor parameters as command options unambiguously.";
+        "Command handler classes must declare a single constructor so that the source generator " +
+        "can resolve constructor parameters as command options unambiguously.";
+
+    private const string NestedCommandHandlerNotSupportedMessage =
+        "Type '{0}' is marked with [Command] but is nested. " +
+        "Source generator supports only top-level command handler classes.";
+
+    private const string NestedCommandHandlerNotSupportedDescription =
+        "Command handler classes marked with [Command] must be top-level, " +
+        "non-nested classes so that the source generator can emit registration code.";
 }
