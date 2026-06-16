@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 env:
   DEFAULT_BRANCH: main
@@ -56,8 +57,15 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack ./src/CommandLine.Generators/CommandLine.Generators.csproj --configuration Release -p:Version=${{ inputs.version_number }} -p:UpdateVersionFromGit=False
 
+      # Get a short-lived NuGet API key
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: sergey-rybalkin
+
       - name: Publish NuGet package
-        run: dotnet nuget push **/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s
+        run: dotnet nuget push **/*.nupkg -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
           https://api.nuget.org/v3/index.json --skip-duplicate
 
   release:
