@@ -65,7 +65,7 @@ jobs:
           user: sergey-rybalkin
 
       - name: Publish NuGet package
-        run: dotnet nuget push **/*.nupkg -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
+        run: dotnet nuget push ./src/artifacts/package/release/*.nupkg -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
           https://api.nuget.org/v3/index.json --skip-duplicate
 
   release:
