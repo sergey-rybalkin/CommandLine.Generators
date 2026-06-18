@@ -169,6 +169,7 @@ Only top-level classes declared in a named namespace are processed. Nested types
 | `CMDGEN002` | Warning  | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code.  |
 | `CMDGEN003` | Warning  | Reported on a `[Command]`-annotated class that declares multiple constructors. No code is generated for this class. The class must declare a single constructor so the generator can resolve command options unambiguously.                |
 | `CMDGEN004` | Warning  | Reported on a `[Command]`-annotated class that is nested. No code is generated for this class. The class must be a top-level, non-nested class so the generator can emit registration code.                                              |
+| `CMDGEN005` | Warning  | Reported on a `[Command]`-annotated class whose constructor has one or more parameters without `[Option]`. No code is generated for this class. Every constructor parameter must be marked with `[Option]` so values can be provided from the command line. |
 
 Generated file names follow this pattern:
 

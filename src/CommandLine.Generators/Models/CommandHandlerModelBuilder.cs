@@ -35,7 +35,10 @@ internal static class CommandHandlerModelBuilder
         string ns = containingType.ContainingNamespace.ToDisplayString();
 
         bool hasMultipleConstructors = containingType.InstanceConstructors.Length > 1;
-        ImmutableArray<CommandParameterModel> parameters = ExtractParameters(containingType, ct);
+        ImmutableArray<CommandParameterModel> parameters = ExtractParameters(
+            containingType,
+            ct,
+            out bool hasConstructorParametersWithoutOption);
 
         ClassDeclarationSyntax classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
         bool isPartial = classDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword);
@@ -51,7 +54,8 @@ internal static class CommandHandlerModelBuilder
             containingType.Locations[0],
             isPartial,
             hasMultipleConstructors,
-            containingType.ContainingType is not null);
+            containingType.ContainingType is not null,
+            hasConstructorParametersWithoutOption);
     }
 
     private static void ResolveExecuteMethods(
@@ -73,8 +77,11 @@ internal static class CommandHandlerModelBuilder
     }
 
     private static ImmutableArray<CommandParameterModel> ExtractParameters(
-        INamedTypeSymbol type, CancellationToken ct)
+        INamedTypeSymbol type,
+        CancellationToken ct,
+        out bool hasParametersWithoutOption)
     {
+        hasParametersWithoutOption = false;
         ImmutableArray<IMethodSymbol> constructors = type.InstanceConstructors;
         if (constructors.Length is not 1)
             return [];
@@ -88,8 +95,14 @@ internal static class CommandHandlerModelBuilder
         {
             ct.ThrowIfCancellationRequested();
 
-            if (TryCreateParameterModel(parameter, out CommandParameterModel parameterModel))
-                builder.Add(parameterModel);
+            if (!TryCreateParameterModel(parameter, out CommandParameterModel parameterModel))
+            {
+                hasParametersWithoutOption = true;
+
+                continue;
+            }
+
+            builder.Add(parameterModel);
         }
 
         return builder.ToImmutable();

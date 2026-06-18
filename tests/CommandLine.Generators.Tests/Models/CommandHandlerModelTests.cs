@@ -23,7 +23,8 @@ public class CommandHandlerModelTests
         Location? location = null,
         bool isPartial = true,
         bool hasMultipleConstructors = false,
-        bool isNestedClass = false)
+        bool isNestedClass = false,
+        bool hasConstructorParametersWithoutOption = false)
     {
         return new CommandHandlerModel(
             name,
@@ -36,7 +37,8 @@ public class CommandHandlerModelTests
             location ?? Location.None,
             isPartial,
             hasMultipleConstructors,
-            isNestedClass);
+            isNestedClass,
+            hasConstructorParametersWithoutOption);
     }
 
     [Test]
@@ -107,6 +109,15 @@ public class CommandHandlerModelTests
     {
         CommandHandlerModel a = CreateModel(isNestedClass: true);
         CommandHandlerModel b = CreateModel(isNestedClass: false);
+
+        a.Equals(b).ShouldBeFalse();
+    }
+
+    [Test]
+    public void Equals_returns_false_when_has_constructor_parameters_without_option_differs()
+    {
+        CommandHandlerModel a = CreateModel(hasConstructorParametersWithoutOption: true);
+        CommandHandlerModel b = CreateModel(hasConstructorParametersWithoutOption: false);
 
         a.Equals(b).ShouldBeFalse();
     }

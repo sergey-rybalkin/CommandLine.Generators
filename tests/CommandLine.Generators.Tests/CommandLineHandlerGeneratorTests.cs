@@ -325,6 +325,36 @@ public partial class AsyncCommand
         result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
     }
 
+    [Test]
+    public void Reports_when_constructor_parameter_has_no_option_attribute()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("demo", "Demo command handler")]
+            public partial class DemoCommandHandler
+            {
+                public DemoCommandHandler(
+                    [Option("String value", "abc", '1')] string val1,
+                    int val2)
+                {
+                }
+
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratorDiagnostics.ShouldContain(
+            d => d.Id == Diagnostics.ConstructorParameterWithoutOptionId);
+        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
+        result.GeneratedSources.ShouldNotContainKey("DemoCommandHandler_handler.g.cs");
+        result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
+    }
+
     private static void EnsureNoErrors(GeneratorRunResult result)
     {
         IEnumerable<Diagnostic> errors = result.CompilationDiagnostics
