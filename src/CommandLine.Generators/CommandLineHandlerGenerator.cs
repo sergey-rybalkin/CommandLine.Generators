@@ -40,7 +40,10 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
                 && !string.IsNullOrEmpty(model.NamespaceName));
 
         IncrementalValuesProvider<CommandHandlerModel> partialPipeline = pipeline.Where(
-                static model => model.IsPartial && !model.HasMultipleConstructors && !model.IsNestedClass);
+                static model => model.IsPartial
+                    && !model.HasMultipleConstructors
+                    && !model.IsNestedClass
+                    && !model.HasConstructorParametersWithoutOption);
 
         // Generate source for each command handler class.
         context.RegisterSourceOutput(pipeline, GenerateClassSource);
@@ -64,35 +67,8 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
 
     private static void GenerateClassSource(SourceProductionContext context, CommandHandlerModel model)
     {
-        if (model.IsNestedClass)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.NestedCommandHandlerNotSupported,
-                model.Location,
-                model.ClassName));
-
+        if (TryReportUnsupportedHandler(context, model))
             return;
-        }
-
-        if (model.HasMultipleConstructors)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.MultipleConstructorsCommandHandler,
-                model.Location,
-                model.ClassName));
-
-            return;
-        }
-
-        if (!model.IsPartial)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.NonPartialCommandHandler,
-                model.Location,
-                model.ClassName));
-
-            return;
-        }
 
         if (!model.HasExecuteMethod)
         {
@@ -104,5 +80,52 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
 
         string source = HandlerEmitter.Emit(model);
         context.AddSource($"{model.ClassName}_handler.g.cs", SourceText.From(source, Encoding.UTF8));
+    }
+
+    private static bool TryReportUnsupportedHandler(
+        SourceProductionContext context,
+        CommandHandlerModel model)
+    {
+        if (model.IsNestedClass)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.NestedCommandHandlerNotSupported,
+                model.Location,
+                model.ClassName));
+
+            return true;
+        }
+
+        if (model.HasMultipleConstructors)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.MultipleConstructorsCommandHandler,
+                model.Location,
+                model.ClassName));
+
+            return true;
+        }
+
+        if (!model.IsPartial)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.NonPartialCommandHandler,
+                model.Location,
+                model.ClassName));
+
+            return true;
+        }
+
+        if (model.HasConstructorParametersWithoutOption)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.ConstructorParameterWithoutOption,
+                model.Location,
+                model.ClassName));
+
+            return true;
+        }
+
+        return false;
     }
 }

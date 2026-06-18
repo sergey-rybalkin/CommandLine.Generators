@@ -29,6 +29,9 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     /// <param name="isPartial">True if the target type is declared as partial, false otherwise.</param>
     /// <param name="hasMultipleConstructors">True if the target type declares multiple constructors.</param>
     /// <param name="isNestedClass">True if the target type is nested in another type.</param>
+    /// <param name="hasConstructorParametersWithoutOption">
+    /// True if the target type has constructor parameters without OptionAttribute.
+    /// </param>
     public CommandHandlerModel(
         string name,
         string description,
@@ -40,7 +43,8 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
         Location location,
         bool isPartial,
         bool hasMultipleConstructors,
-        bool isNestedClass)
+        bool isNestedClass,
+        bool hasConstructorParametersWithoutOption)
     {
         Name = name;
         Description = description;
@@ -53,6 +57,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
         IsPartial = isPartial;
         HasMultipleConstructors = hasMultipleConstructors;
         IsNestedClass = isNestedClass;
+        HasConstructorParametersWithoutOption = hasConstructorParametersWithoutOption;
     }
 
     /// <summary>
@@ -110,6 +115,11 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     /// </summary>
     public bool IsNestedClass { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the target type has constructor parameters without OptionAttribute.
+    /// </summary>
+    public bool HasConstructorParametersWithoutOption { get; }
+
     /// <inheritdoc/>
     public bool Equals(CommandHandlerModel other)
     {
@@ -122,6 +132,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
             || IsPartial != other.IsPartial
             || HasMultipleConstructors != other.HasMultipleConstructors
             || IsNestedClass != other.IsNestedClass
+            || HasConstructorParametersWithoutOption != other.HasConstructorParametersWithoutOption
             || Parameters.Length != other.Parameters.Length)
         {
             return false;
@@ -157,6 +168,7 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
             hash = (hash * 31) + IsPartial.GetHashCode();
             hash = (hash * 31) + HasMultipleConstructors.GetHashCode();
             hash = (hash * 31) + IsNestedClass.GetHashCode();
+            hash = (hash * 31) + HasConstructorParametersWithoutOption.GetHashCode();
 
             foreach (CommandParameterModel parameter in Parameters)
                 hash = (hash * 31) + parameter.GetHashCode();

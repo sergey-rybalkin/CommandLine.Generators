@@ -52,6 +52,19 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         description: NestedCommandHandlerNotSupportedDescription);
 
+    /// <summary>
+    /// Roslyn diagnostics that should be reported on command handlers that have constructor parameters
+    /// without OptionAttribute.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ConstructorParameterWithoutOption = new(
+        id: ConstructorParameterWithoutOptionId,
+        title: "Constructor parameter is missing Option attribute",
+        messageFormat: ConstructorParameterWithoutOptionMessage,
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: ConstructorParameterWithoutOptionDescription);
+
     internal const string MissingExecuteMethodId = "CMDGEN001";
 
     internal const string NonPartialCommandHandlerId = "CMDGEN002";
@@ -59,6 +72,8 @@ internal static class Diagnostics
     internal const string MultipleConstructorsCommandHandlerId = "CMDGEN003";
 
     internal const string NestedCommandHandlerNotSupportedId = "CMDGEN004";
+
+    internal const string ConstructorParameterWithoutOptionId = "CMDGEN005";
 
     private const string MissingExecuteMessage =
         "Type '{0}' must declare or inherit public/internal 'int Execute()' or " +
@@ -91,4 +106,12 @@ internal static class Diagnostics
     private const string NestedCommandHandlerNotSupportedDescription =
         "Command handler classes marked with [Command] must be top-level, " +
         "non-nested classes so that the source generator can emit registration code.";
+
+    private const string ConstructorParameterWithoutOptionMessage =
+        "Type '{0}' has constructor parameters without [Option]. " +
+        "Source generator requires all constructor parameters to be command options.";
+
+    private const string ConstructorParameterWithoutOptionDescription =
+        "Command handler constructor parameters must be marked with [Option] so that values " +
+        "can be provided from the command line.";
 }
