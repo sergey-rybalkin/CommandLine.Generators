@@ -170,7 +170,8 @@ public partial class AsyncCommand
             public partial class DefaultedCommand
             {
                 public DefaultedCommand(
-                    [Option("port")] int port = 8080)
+                    [Option("port")] int port = 8080,
+                    [Option("enabled")] bool enabled = true)
                 {
                 }
 
@@ -182,7 +183,9 @@ public partial class AsyncCommand
 
         string generated = result.GeneratedSources["DefaultedCommand_handler.g.cs"];
         generated.ShouldContain("DefaultValueFactory = static _ => 8080");
+        generated.ShouldContain("DefaultValueFactory = static _ => true");
         generated.ShouldContain("Required = false");
+        EnsureNoErrors(result);
     }
 
     [Test]

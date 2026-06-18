@@ -79,7 +79,7 @@ internal static class Literal
         {
             string s => SymbolDisplay.FormatLiteral(s, quote: true),
             char c => SymbolDisplay.FormatLiteral(c, quote: true),
-            bool b => b ? bool.TrueString : bool.FalseString,
+            bool b => b ? "true" : "false",
 
             byte b => b.ToString(DefaultCulture),
             sbyte b => b.ToString(DefaultCulture),
