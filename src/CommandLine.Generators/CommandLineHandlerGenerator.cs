@@ -67,7 +67,7 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
 
     private static void GenerateClassSource(SourceProductionContext context, CommandHandlerModel model)
     {
-        if (TryReportUnsupportedHandler(context, model))
+        if (ReportUnsupportedHandler(context, model))
             return;
 
         if (!model.HasExecuteMethod)
@@ -78,13 +78,31 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
                 model.ClassName));
         }
 
+        ReportInvalidOptionAliases(context, model);
+
         string source = HandlerEmitter.Emit(model);
         context.AddSource($"{model.GetFullClassName()}_handler.g.cs", SourceText.From(source, Encoding.UTF8));
     }
 
-    private static bool TryReportUnsupportedHandler(
+    private static void ReportInvalidOptionAliases(
         SourceProductionContext context,
         CommandHandlerModel model)
+    {
+        foreach (CommandParameterModel parameter in model.Parameters.Where(p => p.Alias is not null))
+        {
+            if (char.IsLetterOrDigit(parameter.Alias!.Value))
+                continue;
+
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.InvalidOptionAlias,
+                model.Location,
+                model.ClassName,
+                parameter.ParameterName,
+                parameter.Alias.Value));
+        }
+    }
+
+    private static bool ReportUnsupportedHandler(SourceProductionContext context, CommandHandlerModel model)
     {
         if (model.IsNestedClass)
         {

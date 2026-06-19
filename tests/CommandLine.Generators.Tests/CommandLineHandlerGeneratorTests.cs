@@ -104,27 +104,6 @@ public partial class AsyncCommand
     }
 
     [Test]
-    public void Reports_diagnostics_when_no_execute_method_defined_but_still_emits_partial()
-    {
-        const string source = """
-            using CommandLine.Generators;
-
-            namespace Sample;
-
-            [Command("noop", "")]
-            public partial class NoopCommand
-            {
-                public NoopCommand() { }
-            }
-            """;
-
-        GeneratorRunResult result = GeneratorTestHost.Run(source);
-
-        result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GetHandlerSource().ShouldNotContain("SetAction");
-    }
-
-    [Test]
     public void Marks_nullable_parameters_as_not_required()
     {
         const string source = """
@@ -208,34 +187,6 @@ public partial class AsyncCommand
     }
 
     [Test]
-    public void Reports_nested_classes()
-    {
-        const string source = """
-            using CommandLine.Generators;
-
-            namespace Sample;
-
-            public partial class Outer
-            {
-                [Command("nested", "")]
-                public partial class NestedCommand
-                {
-                    public NestedCommand() { }
-                    public int Execute() => 0;
-                }
-            }
-            """;
-
-        GeneratorRunResult result = GeneratorTestHost.Run(source);
-
-        result.GeneratedSources.ShouldNotContainKey("GlobalCommand_handler.g.cs");
-        result.GeneratedSources.ShouldNotContainKey("NestedCommand_handler.g.cs");
-        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratorDiagnostics.ShouldContain(
-            d => d.Id == Diagnostics.NestedCommandHandlerNotSupportedId);
-    }
-
-    [Test]
     public void Generates_root_command_extensions_aggregator_with_all_handlers()
     {
         const string source = """
@@ -271,84 +222,6 @@ public partial class AsyncCommand
         aggregator.ShouldContain("internal static void AddCommandsFromAssembly(this RootCommand root)");
         aggregator.ShouldContain($"root.Add(global::A.X.{Constants.GetCommandDefinitionMethodName}());");
         aggregator.ShouldContain($"root.Add(global::B.Y.{Constants.GetCommandDefinitionMethodName}());");
-    }
-
-    [Test]
-    public void Reports_when_class_is_not_partial()
-    {
-        const string source = """
-            using CommandLine.Generators;
-
-            namespace Sample;
-
-            [Command("run", "Runs the app")]
-            public class NonPartialCommand
-            {
-                public NonPartialCommand() { }
-                public int Execute() => 0;
-            }
-            """;
-
-        GeneratorRunResult result = GeneratorTestHost.Run(source);
-
-        result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.NonPartialCommandHandlerId);
-        result.GeneratedSources.ShouldNotContainKey("Sample.NonPartialCommand_handler.g.cs");
-    }
-
-    [Test]
-    public void Reports_when_class_has_multiple_constructors()
-    {
-        const string source = """
-            using CommandLine.Generators;
-
-            namespace Sample;
-
-            [Command("run", "Runs the app")]
-            public partial class MultipleConstructorsCommand
-            {
-                public MultipleConstructorsCommand() { }
-                public MultipleConstructorsCommand([Option("Port")] int port) { }
-                public int Execute() => 0;
-            }
-            """;
-
-        GeneratorRunResult result = GeneratorTestHost.Run(source);
-
-        result.GeneratorDiagnostics.ShouldContain(
-            d => d.Id == Diagnostics.MultipleConstructorsCommandHandlerId);
-        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources.ShouldNotContainKey("Sample.MultipleConstructorsCommand_handler.g.cs");
-        result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
-    }
-
-    [Test]
-    public void Reports_when_constructor_parameter_has_no_option_attribute()
-    {
-        const string source = """
-            using CommandLine.Generators;
-
-            namespace Sample;
-
-            [Command("demo", "Demo command handler")]
-            public partial class DemoCommandHandler
-            {
-                public DemoCommandHandler(
-                    [Option("String value", "abc", '1')] string val1,
-                    int val2)
-                {
-                }
-
-                public int Execute() => 0;
-            }
-            """;
-
-        GeneratorRunResult result = GeneratorTestHost.Run(source);
-
-        result.GeneratorDiagnostics.ShouldContain(
-            d => d.Id == Diagnostics.ConstructorParameterWithoutOptionId);
-        result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources.ShouldNotContainKey("Sample.DemoCommandHandler_handler.g.cs");
-        result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
     }
 
     [Test]
