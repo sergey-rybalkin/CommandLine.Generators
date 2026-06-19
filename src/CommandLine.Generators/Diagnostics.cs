@@ -65,6 +65,18 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         description: ConstructorParameterWithoutOptionDescription);
 
+    /// <summary>
+    /// Roslyn diagnostics that should be reported on options whose alias is not an ASCII letter or digit.
+    /// </summary>
+    public static readonly DiagnosticDescriptor InvalidOptionAlias = new(
+        id: InvalidOptionAliasId,
+        title: "Invalid option alias",
+        messageFormat: InvalidOptionAliasMessage,
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: InvalidOptionAliasDescription);
+
     internal const string MissingExecuteMethodId = "CMDGEN001";
 
     internal const string NonPartialCommandHandlerId = "CMDGEN002";
@@ -74,6 +86,8 @@ internal static class Diagnostics
     internal const string NestedCommandHandlerNotSupportedId = "CMDGEN004";
 
     internal const string ConstructorParameterWithoutOptionId = "CMDGEN005";
+
+    internal const string InvalidOptionAliasId = "CMDGEN006";
 
     private const string MissingExecuteMessage =
         "Type '{0}' must declare or inherit public/internal 'int Execute()' or " +
@@ -114,4 +128,12 @@ internal static class Diagnostics
     private const string ConstructorParameterWithoutOptionDescription =
         "Command handler constructor parameters must be marked with [Option] so that values " +
         "can be provided from the command line.";
+
+    private const string InvalidOptionAliasMessage =
+        "Type '{0}' declares option '{1}' with non-alphanumeric alias '{2}'. " +
+        "Option aliases must be ASCII letters or digits.";
+
+    private const string InvalidOptionAliasDescription =
+        "Option aliases must be ASCII letters or digits so that they can be used reliably on the " +
+        "command line. The alias is still emitted, but it may not behave as expected.";
 }
