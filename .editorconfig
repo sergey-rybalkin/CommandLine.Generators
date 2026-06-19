@@ -451,6 +451,12 @@ dotnet_diagnostic.RCS1211.severity = warning
 # RCS1264: Use 'var' or explicit type. Rely on IDE0008 instead as this one blocks IDE0090 warnings on code like var item = new Item();
 dotnet_diagnostic.RCS1264.severity = none
 
+# RS1038: Microsoft.CodeAnalysis.Workspaces reference.
+dotnet_diagnostic.RS1038.severity = none
+
+# RS2008: Enable release tracking for the analyzer project.
+dotnet_diagnostic.RS2008.severity = none
+
 #### SonarQube rules configuration ####
 
 # S4050: Operators should be overloaded consistently. We overriding only + operator on web models to allow += model mapping.

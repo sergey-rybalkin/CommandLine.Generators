@@ -1,3 +1,6 @@
+#pragma warning disable SP2100 // Code line is too long. Some code lines in this file are intentionally long
+                               // for readability of the generated code.
+
 using System.Text;
 using CommandLine.Generators.Models;
 
