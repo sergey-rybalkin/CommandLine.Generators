@@ -58,16 +58,16 @@ internal static class HandlerEmitter
     {
         code.StartBlock($"public static Command {Constants.GetCommandDefinitionMethodName}()");
 
-        foreach (CommandParameterModel parameter in model.Parameters)
-            EmitOption(code, parameter);
+        for (int i = 0; i < model.Parameters.Length; i++)
+            EmitOption(code, model.Parameters[i], i);
 
         if (model.Parameters.Length > 0)
             code.AppendLine();
 
         code.AppendLine($"Command retVal = new({Stringify(model.Name)}, {Stringify(model.Description)});");
 
-        foreach (CommandParameterModel parameter in model.Parameters)
-            code.AppendLine($"retVal.Add({parameter.ParameterName});");
+        for (int i = 0; i < model.Parameters.Length; i++)
+            code.AppendLine($"retVal.Add({OptionVariableName(i)});");
 
         EmitSetAction(code, model);
 
@@ -79,13 +79,14 @@ internal static class HandlerEmitter
         code.EndBlock();
     }
 
-    private static void EmitOption(CodeWriter code, CommandParameterModel parameter)
+    private static void EmitOption(CodeWriter code, CommandParameterModel parameter, int index)
     {
+        string variableName = OptionVariableName(index);
         string optionLong = "--" + NameUtilities.ToKebabCase(parameter.ParameterName);
         bool required = !parameter.IsNullable && !parameter.HasDefaultValue;
 
         code.StartBlock(
-            $"Option<{parameter.ParameterTypeName}> {parameter.ParameterName} = new(\"{optionLong}\")");
+            $"Option<{parameter.ParameterTypeName}> {variableName} = new(\"{optionLong}\")");
 
         code.AppendLine($"Description = {Stringify(parameter.Description)},");
         if (!string.IsNullOrEmpty(parameter.ValueHint))
@@ -98,8 +99,10 @@ internal static class HandlerEmitter
         code.EndBlock("};");
 
         if (parameter.Alias.HasValue)
-            code.AppendLine($"{parameter.ParameterName}.Aliases.Add(\"-{parameter.Alias.Value}\");");
+            code.AppendLine($"{variableName}.Aliases.Add(\"-{parameter.Alias.Value}\");");
     }
+
+    private static string OptionVariableName(int index) => $"option{index + 1}";
 
     private static void EmitSetAction(CodeWriter code, CommandHandlerModel model)
     {

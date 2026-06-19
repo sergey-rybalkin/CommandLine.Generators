@@ -148,8 +148,8 @@ public partial class AsyncCommand
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         string generated = result.GetHandlerSource();
-        generated.ShouldContain("Option<int?> port");
-        generated.ShouldContain("Option<string?> name");
+        generated.ShouldContain("Option<int?>");
+        generated.ShouldContain("Option<string?>");
         generated.ShouldNotContain("Required = true");
         generated.ShouldNotContain("DefaultValueFactory");
     }
@@ -204,7 +204,7 @@ public partial class AsyncCommand
 
         string generated = result.GetHandlerSource();
         generated.ShouldContain("HelpName = @\"port\"");
-        generated.ShouldContain("port.Aliases.Add(\"-p\");");
+        generated.ShouldContain("Aliases.Add(\"-p\");");
     }
 
     [Test]
