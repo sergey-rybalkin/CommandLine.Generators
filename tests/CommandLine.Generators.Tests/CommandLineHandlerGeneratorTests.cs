@@ -43,8 +43,8 @@ public sealed class CommandLineHandlerGeneratorTests
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        result.GeneratedSources.ShouldContainKey("ServeCommand_handler.g.cs");
-        string generated = result.GeneratedSources["ServeCommand_handler.g.cs"];
+        result.GeneratedSources.ShouldContainKey("SampleApp.Commands.ServeCommand_handler.g.cs");
+        string generated = result.GetHandlerSource();
         generated.ShouldContain($"public static Command {Constants.GetCommandDefinitionMethodName}()");
         generated.ShouldContain(
             $"public static ServeCommand {Constants.FromParseResultMethodName}(ParseResult pr)");
@@ -73,9 +73,7 @@ public sealed class CommandLineHandlerGeneratorTests
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["RunCommand_handler.g.cs"];
-        generated.ShouldContain($"{Constants.ExecuteMethodName}()");
-
+        result.GetHandlerSource().ShouldContain($"{Constants.ExecuteMethodName}()");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
     }
 
@@ -100,8 +98,7 @@ public partial class AsyncCommand
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["AsyncCommand_handler.g.cs"];
-        generated.ShouldContain($"{Constants.ExecuteAsyncMethodName}(ct)");
+        result.GetHandlerSource().ShouldContain($"{Constants.ExecuteAsyncMethodName}(ct)");
 
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == "CMDGEN001");
     }
@@ -124,8 +121,7 @@ public partial class AsyncCommand
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources.ShouldContainKey("NoopCommand_handler.g.cs");
-        result.GeneratedSources["NoopCommand_handler.g.cs"].ShouldNotContain("SetAction");
+        result.GetHandlerSource().ShouldNotContain("SetAction");
     }
 
     [Test]
@@ -151,7 +147,7 @@ public partial class AsyncCommand
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["NullableCommand_handler.g.cs"];
+        string generated = result.GetHandlerSource();
         generated.ShouldContain("Option<int?> port");
         generated.ShouldContain("Option<string?> name");
         generated.ShouldNotContain("Required = true");
@@ -181,7 +177,7 @@ public partial class AsyncCommand
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["DefaultedCommand_handler.g.cs"];
+        string generated = result.GetHandlerSource();
         generated.ShouldContain("DefaultValueFactory = static _ => 8080");
         generated.ShouldContain("DefaultValueFactory = static _ => true");
         generated.ShouldContain("Required = false");
@@ -206,7 +202,7 @@ public partial class AsyncCommand
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["AliasCommand_handler.g.cs"];
+        string generated = result.GetHandlerSource();
         generated.ShouldContain("HelpName = @\"port\"");
         generated.ShouldContain("port.Aliases.Add(\"-p\");");
     }
@@ -296,7 +292,7 @@ public partial class AsyncCommand
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.NonPartialCommandHandlerId);
-        result.GeneratedSources.ShouldNotContainKey("NonPartialCommand_handler.g.cs");
+        result.GeneratedSources.ShouldNotContainKey("Sample.NonPartialCommand_handler.g.cs");
     }
 
     [Test]
@@ -321,7 +317,7 @@ public partial class AsyncCommand
         result.GeneratorDiagnostics.ShouldContain(
             d => d.Id == Diagnostics.MultipleConstructorsCommandHandlerId);
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources.ShouldNotContainKey("MultipleConstructorsCommand_handler.g.cs");
+        result.GeneratedSources.ShouldNotContainKey("Sample.MultipleConstructorsCommand_handler.g.cs");
         result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
     }
 
@@ -351,8 +347,42 @@ public partial class AsyncCommand
         result.GeneratorDiagnostics.ShouldContain(
             d => d.Id == Diagnostics.ConstructorParameterWithoutOptionId);
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources.ShouldNotContainKey("DemoCommandHandler_handler.g.cs");
+        result.GeneratedSources.ShouldNotContainKey("Sample.DemoCommandHandler_handler.g.cs");
         result.GeneratedSources.ShouldNotContainKey("RootCommandExtensions.g.cs");
+    }
+
+    [Test]
+    public void Generates_unique_files_for_classes_with_identical_names_in_different_namespaces()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Ns1
+            {
+                [Command("cmd1", "")]
+                public partial class RunCommand
+                {
+                    public RunCommand() { }
+                    public int Execute() => 0;
+                }
+            }
+
+            namespace Ns2
+            {
+                [Command("cmd2", "")]
+                public partial class RunCommand
+                {
+                    public RunCommand() { }
+                    public int Execute() => 0;
+                }
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        result.GeneratedSources.ShouldContainKey("Ns1.RunCommand_handler.g.cs");
+        result.GeneratedSources.ShouldContainKey("Ns2.RunCommand_handler.g.cs");
+        EnsureNoErrors(result);
     }
 
     private static void EnsureNoErrors(GeneratorRunResult result)

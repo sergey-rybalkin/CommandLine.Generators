@@ -31,8 +31,8 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["RunCommand_handler.g.cs"];
-        generated.ShouldContain($"{Constants.FromParseResultMethodName}(parseResult).Execute()");
+        result.GetHandlerSource()
+            .ShouldContain($"{Constants.FromParseResultMethodName}(parseResult).Execute()");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         EnsureNoErrors(result);
     }
@@ -61,8 +61,8 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        string generated = result.GeneratedSources["RunCommand_handler.g.cs"];
-        generated.ShouldContain($"{Constants.FromParseResultMethodName}(parseResult).ExecuteAsync(ct)");
+        result.GetHandlerSource()
+            .ShouldContain($"{Constants.FromParseResultMethodName}(parseResult).ExecuteAsync(ct)");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         EnsureNoErrors(result);
     }
@@ -89,7 +89,7 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
 
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
-        result.GeneratedSources["RunCommand_handler.g.cs"].ShouldContain(".Execute()");
+        result.GetHandlerSource().ShouldContain(".Execute()");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         EnsureNoErrors(result);
     }
@@ -113,7 +113,7 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources["RunCommand_handler.g.cs"].ShouldNotContain("SetAction");
+        result.GetHandlerSource().ShouldNotContain("SetAction");
     }
 
     [Test]
@@ -139,7 +139,7 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         result.GeneratorDiagnostics.ShouldContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
-        result.GeneratedSources["RunCommand_handler.g.cs"].ShouldNotContain("SetAction");
+        result.GetHandlerSource().ShouldNotContain("SetAction");
     }
 
     private static void EnsureNoErrors(GeneratorRunResult result)

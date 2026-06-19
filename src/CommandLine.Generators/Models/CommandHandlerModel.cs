@@ -178,10 +178,18 @@ internal readonly struct CommandHandlerModel : IEquatable<CommandHandlerModel>
     }
 
     /// <summary>
-    /// Gets full class name including the namespace.
+    /// Gets a safe class name including namespaces path starting from global.
+    /// </summary>
+    public string GetSafeClassName()
+    {
+        return string.IsNullOrEmpty(NamespaceName) ? ClassName : $"global::{NamespaceName}.{ClassName}";
+    }
+
+    /// <summary>
+    /// Gets a full class name including the namespace.
     /// </summary>
     public string GetFullClassName()
     {
-        return string.IsNullOrEmpty(NamespaceName) ? ClassName : $"global::{NamespaceName}.{ClassName}";
+        return string.IsNullOrEmpty(NamespaceName) ? ClassName : $"{NamespaceName}.{ClassName}";
     }
 }
