@@ -26,7 +26,7 @@ internal static class RootExtensionsEmitter
                 continue;
 
             code.AppendLine(
-                $"root.Add({model.GetFullClassName()}.{Constants.GetCommandDefinitionMethodName}());");
+                $"root.Add({model.GetSafeClassName()}.{Constants.GetCommandDefinitionMethodName}());");
         }
 
         code.EndBlock(numBlocks: 2);

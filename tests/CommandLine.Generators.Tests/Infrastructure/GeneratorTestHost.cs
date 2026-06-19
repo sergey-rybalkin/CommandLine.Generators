@@ -67,10 +67,8 @@ internal static class GeneratorTestHost
         builder.Add(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
         builder.Add(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location));
         builder.Add(MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location));
-        builder.Add(MetadataReference.CreateFromFile(
-            typeof(System.Threading.CancellationToken).Assembly.Location));
-        builder.Add(MetadataReference.CreateFromFile(
-            typeof(System.Threading.Tasks.Task).Assembly.Location));
+        builder.Add(MetadataReference.CreateFromFile(typeof(CancellationToken).Assembly.Location));
+        builder.Add(MetadataReference.CreateFromFile(typeof(Task).Assembly.Location));
         builder.Add(MetadataReference.CreateFromFile(typeof(RootCommand).Assembly.Location));
         builder.Add(MetadataReference.CreateFromFile(typeof(FileInfo).Assembly.Location));
         builder.Add(MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location));
@@ -86,7 +84,7 @@ internal static class GeneratorTestHost
         {
             try
             {
-                System.Reflection.Assembly loaded = System.Reflection.Assembly.Load(referenced);
+                Assembly loaded = System.Reflection.Assembly.Load(referenced);
                 if (!string.IsNullOrEmpty(loaded.Location))
                     builder.Add(MetadataReference.CreateFromFile(loaded.Location));
             }
@@ -115,4 +113,22 @@ internal static class GeneratorTestHost
 internal sealed record GeneratorRunResult(
     Dictionary<string, string> GeneratedSources,
     ImmutableArray<Diagnostic> GeneratorDiagnostics,
-    ImmutableArray<Diagnostic> CompilationDiagnostics);
+    ImmutableArray<Diagnostic> CompilationDiagnostics)
+{
+    /// <summary>
+    /// Gets the first generated command handler source code.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Indicates that the requested operation is invalid.
+    /// </exception>
+    internal string GetHandlerSource()
+    {
+        foreach (KeyValuePair<string, string> kvp in GeneratedSources)
+        {
+            if (kvp.Key.EndsWith("_handler.g.cs", StringComparison.Ordinal))
+                return kvp.Value;
+        }
+
+        throw new InvalidOperationException("No handler source was generated.");
+    }
+}

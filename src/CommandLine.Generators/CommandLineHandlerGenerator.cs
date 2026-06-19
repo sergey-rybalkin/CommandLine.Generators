@@ -79,7 +79,7 @@ public class CommandLineHandlerGenerator : IIncrementalGenerator
         }
 
         string source = HandlerEmitter.Emit(model);
-        context.AddSource($"{model.ClassName}_handler.g.cs", SourceText.From(source, Encoding.UTF8));
+        context.AddSource($"{model.GetFullClassName()}_handler.g.cs", SourceText.From(source, Encoding.UTF8));
     }
 
     private static bool TryReportUnsupportedHandler(
