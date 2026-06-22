@@ -16,7 +16,7 @@ internal static class Program
     {
         RootCommand rootCommand = new("Sample app for System.CommandLine");
         rootCommand.Directives.Add(new DiagramDirective());
-        rootCommand.AddCommandsFromAssembly();
+        rootCommand.AddCommandsFromAssembly(h => Console.WriteLine(h.GetType()));
 
         ParseResult parseResult = rootCommand.Parse(args);
 

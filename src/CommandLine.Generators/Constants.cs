@@ -12,7 +12,7 @@ internal static class Constants
 
     internal const string ExecuteAsyncMethodName = "ExecuteAsync";
 
-    internal const string GetCommandDefinitionMethodName = "GetCommandDefinition";
+    internal const string GetDefinitionMethodName = "GetCommandDefinition";
 
     internal const string FromParseResultMethodName = "FromParseResult";
 

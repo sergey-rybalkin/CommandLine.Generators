@@ -18,7 +18,9 @@ internal static class RootExtensionsEmitter
         CodeWriter code = new(300 + (models.Length * 100));
         code.AppendFileHeader();
         code.StartBlock("internal static class RootCommandExtensions");
-        code.StartBlock("internal static void AddCommandsFromAssembly(this RootCommand root)");
+        code.StartBlock(
+            "internal static void AddCommandsFromAssembly(this RootCommand root, " +
+            "System.Action<object>? setupHandler = null)");
 
         foreach (CommandHandlerModel model in models)
         {
@@ -26,7 +28,7 @@ internal static class RootExtensionsEmitter
                 continue;
 
             code.AppendLine(
-                $"root.Add({model.GetSafeClassName()}.{Constants.GetCommandDefinitionMethodName}());");
+                $"root.Add({model.GetSafeClassName()}.{Constants.GetDefinitionMethodName}(setupHandler));");
         }
 
         code.EndBlock(numBlocks: 2);
