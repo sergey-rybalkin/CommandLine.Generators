@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 
 namespace CommandLine.Generators.Emit;
@@ -16,9 +17,22 @@ internal class CodeWriter
         using System.CommandLine;
         """;
 
+    private static readonly string GeneratedCodeAttribute;
+
     private readonly StringBuilder _buffer;
 
     private int _indent;
+
+#pragma warning disable S3963 // "static" fields should be initialized inline
+    static CodeWriter()
+    {
+        string generatorName = typeof(Diagnostics).Namespace ?? "CommandLine.Generators";
+        string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
+
+        GeneratedCodeAttribute = $"""
+            [System.CodeDom.Compiler.GeneratedCode("{generatorName}", "{assemblyVersion}")]
+            """;
+    }
 
     internal CodeWriter(int bufferCapacity) => _buffer = new StringBuilder(bufferCapacity);
 
@@ -58,6 +72,7 @@ internal class CodeWriter
         _buffer.AppendLine();
         _buffer.AppendLine($"namespace {fileNamespace};");
         _buffer.AppendLine();
+        _buffer.AppendLine(GeneratedCodeAttribute);
 
         return this;
     }
