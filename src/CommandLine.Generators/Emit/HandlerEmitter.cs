@@ -1,6 +1,3 @@
-#pragma warning disable SP2100 // Code line is too long. Some code lines in this file are intentionally long
-                               // for readability of the generated code.
-
 using System.Text;
 using CommandLine.Generators.Models;
 
@@ -11,13 +8,10 @@ namespace CommandLine.Generators.Emit;
 /// </summary>
 internal static class HandlerEmitter
 {
-    private const string SetAsyncActionCode = $"""
-        retVal.SetAction(static (parseResult, ct) => {Constants.FromParseResultMethodName}(parseResult).{Constants.ExecuteAsyncMethodName}(ct));
-        """;
-
-    private const string SetSyncActionCode = $"""
-        retVal.SetAction(static (parseResult) => {Constants.FromParseResultMethodName}(parseResult).{Constants.ExecuteMethodName}());
-        """;
+    private const string GetCommandDefinitionSignature = $"""
+        public static Command {Constants.GetDefinitionMethodName}(
+            System.Action<object>? setupHandler = null)
+""";
 
     /// <summary>
     /// Builds the source text for the generated partial class.
@@ -59,7 +53,7 @@ internal static class HandlerEmitter
 
     private static void EmitGetCommandDefinition(CodeWriter code, CommandHandlerModel model)
     {
-        code.StartBlock($"public static Command {Constants.GetCommandDefinitionMethodName}()");
+        code.StartBlock(GetCommandDefinitionSignature);
 
         for (int i = 0; i < model.Parameters.Length; i++)
             EmitOption(code, model.Parameters[i], i);
@@ -113,10 +107,22 @@ internal static class HandlerEmitter
             return;
 
         code.AppendLine();
+
+        string lambdaParameters = model.HasAsyncExecute ? "(parseResult, ct)" : "(parseResult)";
+        code.StartBlock($"retVal.SetAction({lambdaParameters} =>");
+
+        code.AppendLine($"{model.ClassName} cmd = {Constants.FromParseResultMethodName}(parseResult);");
+        code.AppendLine("if (setupHandler is not null)");
+        code.Indent();
+        code.AppendLine("setupHandler(cmd);");
+        code.Unindent();
+
         if (model.HasAsyncExecute)
-            code.AppendLine(SetAsyncActionCode);
+            code.AppendLine($"return cmd.{Constants.ExecuteAsyncMethodName}(ct);");
         else
-            code.AppendLine(SetSyncActionCode);
+            code.AppendLine($"cmd.{Constants.ExecuteMethodName}();");
+
+        code.EndBlock("});");
     }
 
     private static void EmitFromParseResult(CodeWriter code, CommandHandlerModel model)

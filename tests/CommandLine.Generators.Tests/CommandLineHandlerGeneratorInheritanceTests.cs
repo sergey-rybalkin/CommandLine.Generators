@@ -32,7 +32,8 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         result.GetHandlerSource()
-            .ShouldContain($"{Constants.FromParseResultMethodName}(parseResult).Execute()");
+            .ShouldContain($"cmd = {Constants.FromParseResultMethodName}(parseResult);");
+        result.GetHandlerSource().ShouldContain("cmd.Execute();");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         EnsureNoErrors(result);
     }
@@ -62,7 +63,8 @@ public sealed class CommandLineHandlerGeneratorInheritanceTests
         GeneratorRunResult result = GeneratorTestHost.Run(source);
 
         result.GetHandlerSource()
-            .ShouldContain($"{Constants.FromParseResultMethodName}(parseResult).ExecuteAsync(ct)");
+            .ShouldContain($"cmd = {Constants.FromParseResultMethodName}(parseResult);");
+        result.GetHandlerSource().ShouldContain("return cmd.ExecuteAsync(ct);");
         result.GeneratorDiagnostics.ShouldNotContain(d => d.Id == Diagnostics.MissingExecuteMethodId);
         EnsureNoErrors(result);
     }

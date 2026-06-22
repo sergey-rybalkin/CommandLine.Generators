@@ -45,7 +45,7 @@ public sealed class CommandLineHandlerGeneratorTests
 
         result.GeneratedSources.ShouldContainKey("SampleApp.Commands.ServeCommand_handler.g.cs");
         string generated = result.GetHandlerSource();
-        generated.ShouldContain($"public static Command {Constants.GetCommandDefinitionMethodName}()");
+        generated.ShouldContain($"public static Command {Constants.GetDefinitionMethodName}(");
         generated.ShouldContain(
             $"public static ServeCommand {Constants.FromParseResultMethodName}(ParseResult pr)");
         generated.ShouldContain($"partial void {Constants.OnCommandDefinedMethodName}(Command cmd);");
@@ -219,9 +219,62 @@ public partial class AsyncCommand
         string aggregator = result.GeneratedSources["RootCommandExtensions.g.cs"];
         aggregator.ShouldContain("namespace CommandLine.Generators;");
         aggregator.ShouldContain("internal static class RootCommandExtensions");
-        aggregator.ShouldContain("internal static void AddCommandsFromAssembly(this RootCommand root)");
-        aggregator.ShouldContain($"root.Add(global::A.X.{Constants.GetCommandDefinitionMethodName}());");
-        aggregator.ShouldContain($"root.Add(global::B.Y.{Constants.GetCommandDefinitionMethodName}());");
+        aggregator.ShouldContain("internal static void AddCommandsFromAssembly(this RootCommand root, " +
+            "System.Action<object>? setupHandler = null)");
+        aggregator.ShouldContain(
+            $"root.Add(global::A.X.{Constants.GetDefinitionMethodName}(setupHandler));");
+        aggregator.ShouldContain(
+            $"root.Add(global::B.Y.{Constants.GetDefinitionMethodName}(setupHandler));");
+    }
+
+    [Test]
+    public void Wires_command_hook_into_sync_action_before_execute()
+    {
+        const string source = """
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("run", "")]
+            public partial class HookedCommand
+            {
+                public HookedCommand() { }
+                public int Execute() => 0;
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GetHandlerSource();
+        generated.ShouldContain($"public static Command {Constants.GetDefinitionMethodName}(");
+        generated.ShouldContain($".{Constants.ExecuteMethodName}();");
+        EnsureNoErrors(result);
+    }
+
+    [Test]
+    public void Wires_command_hook_into_async_action_before_execute()
+    {
+        const string source = """
+            using System.Threading;
+            using System.Threading.Tasks;
+            using CommandLine.Generators;
+
+            namespace Sample;
+
+            [Command("run", "")]
+            public partial class HookedAsyncCommand
+            {
+                public HookedAsyncCommand() { }
+                public Task<int> ExecuteAsync(CancellationToken ct) => Task.FromResult(0);
+            }
+            """;
+
+        GeneratorRunResult result = GeneratorTestHost.Run(source);
+
+        string generated = result.GetHandlerSource();
+        generated.ShouldContain("setupHandler(cmd);");
+        generated.ShouldContain($"return cmd.{Constants.ExecuteAsyncMethodName}(ct);");
+        EnsureNoErrors(result);
     }
 
     [Test]

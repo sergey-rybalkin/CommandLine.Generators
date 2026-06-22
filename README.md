@@ -24,20 +24,20 @@ The generator injects two attributes into the consuming compilation:
 It then scans for partial classes annotated with `CommandAttribute` and collects option metadata from constructor parameters annotated with `OptionAttribute`.
 
 Based on that information, it generates a second partial class implementation with the following methods:
-- `public static Command GetCommandDefinition()` method that creates and returns a `System.CommandLine.Command` instance representing the command definition with all constructor arguments marked with `OptionAttribute` added as `Option<T>` options.
+- `public static Command GetCommandDefinition(System.Action<object>? setupHandler = null)` method that creates and returns a `System.CommandLine.Command` instance representing the command definition with all constructor arguments marked with `OptionAttribute` added as `Option<T>` options. The optional action, when supplied, is invoked with the created handler instance right before its `Execute`/`ExecuteAsync` method is called.
 - `public static <ClassName> FromParseResult(ParseResult pr)` method that creates an instance of the command handler class from a `ParseResult` object.
 - `static partial void OnCommandDefined(Command cmd);` partial method that can be implemented by the user to customize the generated `Command` instance, for example by adding subcommands or custom validators.
 - `static partial void OnCommandCreated(<ClassName> handler, ParseResult pr);` partial method that can be implemented by the user to customize the created command handler instance, for example by performing additional initialization based on the parse result or using dependency injection container to initialize its properties.
 
-When the handler class declares either an `int Execute()` method or a `Task<int> ExecuteAsync(CancellationToken)` method, the generator also wires it into the produced `Command` via `SetAction(...)` so the handler is invoked when the command is run.
+When the handler class declares either an `int Execute()` method or a `Task<int> ExecuteAsync(CancellationToken)` method, the generator also wires it into the produced `Command` via `SetAction(...)` so the handler is invoked when the command is run. If a `setupHandler` delegate is passed to `AddCommandsFromAssembly`/`GetCommandDefinition`, it is invoked with the handler instance before `Execute`/`ExecuteAsync`, providing a single extension point for cross-cutting logic (such as dependency injection or logging) that applies to all handlers without implementing `OnCommandCreated` on each one.
 
-Also, the generator emits helper registration method for all matching classes in the target project as an extension method for `RootCommand` class.
+Also, the generator emits helper registration method for all matching classes in the target project as an extension method for `RootCommand` class. It accepts an optional action that is forwarded to every command.
 ```csharp
 internal static class RootCommandExtensions
 {
-    internal static void AddCommandsFromAssembly(this RootCommand root)
+    internal static void AddCommandsFromAssembly(this RootCommand root, System.Action<object>? setupHandler = null)
     {
-        root.Add(global::SampleApp.Commands.MyCommandHandler.GetCommandDefinition());
+        root.Add(global::SampleApp.Commands.MyCommandHandler.GetCommandDefinition(setupHandler));
         // other commands registered here
     }
 }
@@ -105,7 +105,7 @@ partial class ServeCommand
 
     static partial void OnCommandCreated(ServeCommand handler, ParseResult pr);
 
-    public static Command GetCommandDefinition()
+    public static Command GetCommandDefinition(System.Action<object>? setupHandler = null)
     {
         Option<int> port = new("--port")
         {
@@ -126,7 +126,13 @@ partial class ServeCommand
         retVal.Add(port);
         retVal.Add(root);
 
-        retVal.SetAction(parseResult => FromParseResult(parseResult).Execute());
+        retVal.SetAction(parseResult =>
+        {
+            ServeCommand cmd = FromParseResult(parseResult);
+            if (setupHandler is not null)
+                setupHandler(cmd);
+            cmd.Execute();
+        });
 
         OnCommandDefined(retVal);
 
@@ -163,14 +169,14 @@ Only top-level classes declared in a named namespace are processed. Nested types
 
 ## Diagnostics
 
-| Id          | Severity | Description                                                                                                                                                                                                                                |
-| ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Id          | Severity | Description                                                                                                                                                                                                                                                                                    |
+| ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CMDGEN001` | Warning  | Reported on a `[Command]`-annotated class that declares or inherits neither `public`/`internal` `int Execute()` nor `public`/`internal` `Task<int> ExecuteAsync(CancellationToken)`. The generator still produces `GetCommandDefinition` and `FromParseResult`, but does not wire `SetAction`. |
-| `CMDGEN002` | Warning  | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code.  |
-| `CMDGEN003` | Warning  | Reported on a `[Command]`-annotated class that declares multiple constructors. No code is generated for this class. The class must declare a single constructor so the generator can resolve command options unambiguously.                |
-| `CMDGEN004` | Warning  | Reported on a `[Command]`-annotated class that is nested. No code is generated for this class. The class must be a top-level, non-nested class so the generator can emit registration code.                                              |
-| `CMDGEN005` | Warning  | Reported on a `[Command]`-annotated class whose constructor has one or more parameters without `[Option]`. No code is generated for this class. Every constructor parameter must be marked with `[Option]` so values can be provided from the command line. |
-| `CMDGEN006` | Warning  | Reported on an `[Option]` whose alias is not an ASCII letter or digit. The alias is still emitted, but option aliases must be ASCII letters or digits to behave reliably on the command line. |
+| `CMDGEN002` | Warning  | Reported on a `[Command]`-annotated class that is not declared as `partial`. No code is generated for this class. The class must be declared as `partial` so the generator can emit the second partial class file with registration code.                                                      |
+| `CMDGEN003` | Warning  | Reported on a `[Command]`-annotated class that declares multiple constructors. No code is generated for this class. The class must declare a single constructor so the generator can resolve command options unambiguously.                                                                    |
+| `CMDGEN004` | Warning  | Reported on a `[Command]`-annotated class that is nested. No code is generated for this class. The class must be a top-level, non-nested class so the generator can emit registration code.                                                                                                    |
+| `CMDGEN005` | Warning  | Reported on a `[Command]`-annotated class whose constructor has one or more parameters without `[Option]`. No code is generated for this class. Every constructor parameter must be marked with `[Option]` so values can be provided from the command line.                                    |
+| `CMDGEN006` | Warning  | Reported on an `[Option]` whose alias is not an ASCII letter or digit. The alias is still emitted, but option aliases must be ASCII letters or digits to behave reliably on the command line.                                                                                                  |
 
 Generated file names follow this pattern:
 
