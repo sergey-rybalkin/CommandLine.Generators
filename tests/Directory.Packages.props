@@ -9,8 +9,8 @@
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="Soenneker.Utils.AutoBogus" Version="4.0.844" />
-    <PackageVersion Include="System.CommandLine" Version="2.0.12" />
-    <PackageVersion Include="TUnit" Version="1.72.16" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.14" />
+    <PackageVersion Include="TUnit" Version="1.76.28" />
   </ItemGroup>
   <ItemGroup>
     <GlobalPackageReference Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
